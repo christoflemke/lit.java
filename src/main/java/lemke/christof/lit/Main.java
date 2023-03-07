@@ -18,9 +18,10 @@ public class Main {
         Workspace ws = new Workspace(pwd);
         Database db = new Database(pwd);
         Environment env = new Environment();
+        Refs refs = new Refs(pwd);
         switch (commadString) {
             case "commit":
-                new CommitCommand(ws, db, env).run();
+                new CommitCommand(ws, db, env, refs).run();
                 break;
             case "init":
                 new InitCommand(args).run();

@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public record CommitCommand(Workspace workspace, Database db, Environment env) implements Runnable {
+public record CommitCommand(Workspace workspace, Database db, Environment env, Refs refs) implements Runnable {
     @Override
     public void run() {
         try {
@@ -24,7 +24,8 @@ public record CommitCommand(Workspace workspace, Database db, Environment env) i
             Tree tree = new Tree(entries);
             db.write(tree);
             String message = readMessage();
-            Commit commit = new Commit(tree.oid(), Author.createAuthor(env), Author.createCommitter(env), message);
+            String parent = refs.readHead();
+            Commit commit = new Commit(parent, tree.oid(), Author.createAuthor(env), Author.createCommitter(env), message);
             db.write(commit);
         } catch (IOException e) {
             throw new RuntimeException(e);

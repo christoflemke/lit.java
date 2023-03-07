@@ -5,6 +5,7 @@ export REPO_ROOT=$(cd .. && pwd)
 export GIT_COMMITTER_DATE="1678008251 +0100"
 export GIT_AUTHOR_DATE="1678008252 +0100"
 export GIT_AUTHOR_NAME="Christof Lemke"
+export GIT_COMMITTER_NAME="Christof Lemke"
 export GIT_AUTHOR_EMAIL="doesnotexist@gmail.com"
 
 (cd $REPO_ROOT && ./gradlew jar)
@@ -14,9 +15,9 @@ export GIT_AUTHOR_EMAIL="doesnotexist@gmail.com"
   REF_REPO_PATH=reference-repo
   rm -rf "$REF_REPO_PATH"
   git init $REF_REPO_PATH
+  cd $REF_REPO_PATH
   git config --local user.name $GIT_AUTHOR_NAME
   git config --local user.email $GIT_AUTHOR_EMAIL
-  cd $REF_REPO_PATH
 
   echo 'hello' > hello.txt
   echo 'world' > world.txt

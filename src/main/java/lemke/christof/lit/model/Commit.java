@@ -22,7 +22,7 @@ public record Commit (
                 "author " + author,
                 "committer " + committer,
                 "",
-                message
+                message + "\n"
         ).stream().collect(Collectors.joining("\n"));
         return stringData.getBytes(StandardCharsets.UTF_8);
     }

@@ -1,4 +1,4 @@
-package lemke.christof.lit;
+package lemke.christof.lit.model;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -20,9 +20,8 @@ public interface DbObject {
 
     byte[] data();
 
-    default void write(Path file) throws IOException {
-        Files.createDirectories(file.getParent());
-        Files.write(file, diskData());
+    default String hexData() {
+        return HexFormat.of().formatHex(diskData());
     }
 
     default byte[] diskData() {

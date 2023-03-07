@@ -1,6 +1,5 @@
-package lemke.christof.lit;
+package lemke.christof.lit.model;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 public record Blob (byte[] data) implements DbObject {

@@ -27,6 +27,7 @@ public record CommitCommand(Workspace workspace, Database db, Environment env, R
             String parent = refs.readHead();
             Commit commit = new Commit(parent, tree.oid(), Author.createAuthor(env), Author.createCommitter(env), message);
             db.write(commit);
+            refs.updateHead(commit.oid());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

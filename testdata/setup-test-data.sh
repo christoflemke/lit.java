@@ -28,6 +28,8 @@ export GIT_AUTHOR_EMAIL="doesnotexist@gmail.com"
   echo 'hi!' > bin/hi.sh
   chmod u+x bin/hi.sh
   git add bin/hi.sh
+  echo 'world' > bin/world.txt
+  git add bin/world.txt
   git commit -m 'second commit'
 )
 
@@ -47,5 +49,6 @@ export GIT_AUTHOR_EMAIL="doesnotexist@gmail.com"
   mkdir bin
   echo 'hi!' > bin/hi.sh
   chmod u+x bin/hi.sh
+  echo 'world' > bin/world.txt
   echo 'second commit' | lit commit
 )

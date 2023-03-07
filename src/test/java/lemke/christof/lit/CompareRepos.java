@@ -31,12 +31,12 @@ public class CompareRepos {
         return Stream.of(
                 "32aad8c35387213772370ce678e403db1ed28243",
                 "42f46a330ec74552df5bc383abf72931e194360d",
-                "6c4e5d1c30a6450ef8286658766222df8ad55f21",
+                "678c5674a0e41cab69ddb8469ac499c4363d9ea3",
+                "7bfce1cd9c31878b94002055025281617f403903",
                 "88e38705fdbd3608cddbe904b67c731f3234c45b",
-                "b1c45bfe2bbad69dd5809bdc4ad75505c9de4010",
+                "916966c40a819e1f5aafe9ea58a34892ecb82a9a",
                 "cc628ccd10742baea8241c5924df992b5c019f71",
-                "ce013625030ba8dba906f756967f9e9ca394464a",
-                "ee44e3d2eb89427d51337fa5c11c016897ace8e7"
+                "ce013625030ba8dba906f756967f9e9ca394464a"
         );
     }
 
@@ -51,5 +51,4 @@ public class CompareRepos {
         byte[] referenceBytes = Files.readAllBytes(referencePath);
         assertEquals(HexFormat.of().formatHex(referenceBytes), HexFormat.of().formatHex(actualBytes));
     }
-
 }

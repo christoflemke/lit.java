@@ -1,18 +1,13 @@
-package lemke.christof.lit.model;
+package lemke.christof.lit;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HexFormat;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,10 +29,14 @@ public class CompareRepos {
 
     public static Stream<String> shas() {
         return Stream.of(
+                "32aad8c35387213772370ce678e403db1ed28243",
                 "42f46a330ec74552df5bc383abf72931e194360d",
+                "6c4e5d1c30a6450ef8286658766222df8ad55f21",
                 "88e38705fdbd3608cddbe904b67c731f3234c45b",
+                "b1c45bfe2bbad69dd5809bdc4ad75505c9de4010",
                 "cc628ccd10742baea8241c5924df992b5c019f71",
-                "ce013625030ba8dba906f756967f9e9ca394464a"
+                "ce013625030ba8dba906f756967f9e9ca394464a",
+                "ee44e3d2eb89427d51337fa5c11c016897ace8e7"
         );
     }
 

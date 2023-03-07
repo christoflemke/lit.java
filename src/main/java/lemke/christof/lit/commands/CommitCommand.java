@@ -15,17 +15,16 @@ public record CommitCommand(Workspace workspace, Database db, Environment env, R
     @Override
     public void run() {
         try {
-            List<Entry> entries = new ArrayList<>();
-            for (Path f : workspace.listFiles()) {
-                Blob blob = createBlob(f);
-                db.write(blob);
-                entries.add(new Entry(f, blob.oid()));
+            Workspace.BuildResult result = workspace.buildTree();
+            for (Blob b : result.blobs()) {
+                db.write(b);
             }
-            Tree tree = new Tree(entries);
-            db.write(tree);
+            for (Tree t : result.trees()) {
+                db.write(t);
+            }
             String message = readMessage();
             String parent = refs.readHead();
-            Commit commit = new Commit(parent, tree.oid(), Author.createAuthor(env), Author.createCommitter(env), message);
+            Commit commit = new Commit(parent, result.root().oid(), Author.createAuthor(env), Author.createCommitter(env), message);
             db.write(commit);
             refs.updateHead(commit.oid());
         } catch (IOException e) {

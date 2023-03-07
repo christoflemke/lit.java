@@ -1,6 +1,7 @@
 package lemke.christof.lit.model;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public record Blob (byte[] data) implements DbObject {
     @Override
@@ -8,7 +9,20 @@ public record Blob (byte[] data) implements DbObject {
         return "blob";
     }
 
-    static Blob fromString(String s) {
+    public static Blob fromString(String s) {
         return new Blob(s.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public String toString() {
+        return oid();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Blob) {
+            return Arrays.equals(this.data, ((Blob) obj).data);
+        }
+        return false;
     }
 }

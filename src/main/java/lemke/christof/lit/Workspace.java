@@ -1,18 +1,95 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.model.Blob;
+import lemke.christof.lit.model.Entry;
+import lemke.christof.lit.model.Tree;
+
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public record Workspace (Path root){
+
+    record FileTree (Path path, List<FileTree> children) {
+        public String print(int indent) {
+            String result = "";
+            for(int i = 0; i<indent; i++) {
+                result += " ";
+            }
+            result += path + "\n";
+            for(FileTree c: children) {
+                result += c.print(indent + 2);
+            }
+            return result;
+        }
+
+        public boolean isDir() {
+            return !children.isEmpty();
+        }
+    }
+
     public List<Path> listFiles() {
         try {
             return Files.list(root)
                     .filter(p -> !Files.isDirectory(p))
                     .map(f -> root.relativize(f))
                     .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public record BuildResult (Tree root, List<Blob> blobs, List<Tree> trees) {}
+
+    public BuildResult buildTree() {
+        try {
+            List<Tree> trees = new ArrayList<>();
+            List<Blob> blobs = new ArrayList<>();
+            AtomicReference<Tree> rootTree = new AtomicReference<>();
+            Files.walkFileTree(root, new SimpleFileVisitor<>() {
+                Stack<List<Entry>> children = new Stack<>();
+                Path currentParent = null;
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    if (dir.endsWith(".git")) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+                    children.push(new ArrayList<>());
+                    currentParent = dir;
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Tree tree = new Tree(children.pop());
+                    currentParent = currentParent.getParent();
+                    trees.add(tree);
+                    if(children.empty()) {
+                        rootTree.set(tree);
+                    } else {
+                        children.peek().add(new Entry(root.relativize(dir), tree.oid()));
+                    }
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Blob blob = new Blob(read(file));
+                    blobs.add(blob);
+                    children.peek().add(new Entry(root.relativize(file), blob.oid()));
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            return new BuildResult(rootTree.get(), blobs, trees);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -1,8 +1,8 @@
 package lemke.christof.lit;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
+import java.security.DigestInputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -17,20 +18,111 @@ import java.time.temporal.ChronoField;
 import java.util.*;
 
 public class Index {
-
+    static int REGULAR_MODE = 0100644;
+    static int EXECUTABLE_MODE = 0100755;
     private final Path tmpFile;
     private final Path indexPath;
     private final Set<Entry> entries = new TreeSet<>(Comparator.comparing(o -> o.path));
     private final Path root;
+    private final Path lockPath;
 
     public Index(Path root) {
         this.root = root;
         this.indexPath = root.resolve(".git").resolve("index");
+        this.lockPath = root.resolve(".git").resolve("index.lock");
         try {
             this.tmpFile = Files.createTempFile("index-", null);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Set<Entry> entries() {
+        return entries;
+    }
+
+    public FileLock tryLock() throws IOException {
+        return new RandomAccessFile(lockPath.toFile(), "rw").getChannel().tryLock();
+    }
+
+    private DataInputStream openStream(MessageDigest digest) throws FileNotFoundException {
+        InputStream in = new FileInputStream(indexPath.toFile());
+        DigestInputStream digestInputStream = new DigestInputStream(in, digest);
+        return new DataInputStream(digestInputStream);
+    }
+
+    public void load() {
+        MessageDigest digest = createSha1();
+        try (DataInputStream dataInputStream = openStream(digest)) {
+            int entryCount = readHeader(dataInputStream);
+
+            readEntries(dataInputStream, entryCount);
+
+            String sum = HexFormat.of().formatHex(digest.digest());
+            byte[] sumBytes = dataInputStream.readNBytes(20);
+            String indexSum = HexFormat.of().formatHex(sumBytes);
+            if (!sum.equals(indexSum)) {
+                throw new RuntimeException("Index checksum mismatch. Computed: " + sum + " read: " + indexSum);
+            }
+        } catch (FileNotFoundException e) {
+            return;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void readEntries(DataInputStream in, int entryCount) throws IOException {
+        for(int i = 0; i < entryCount; i++) {
+            int ctime_sec = in.readInt();
+            int ctime_nano = in.readInt();
+            int mtime_sec = in.readInt();
+            int mtime_nano = in.readInt();
+            int dev = in.readInt();
+            int ino = in.readInt();
+            int mode = in.readInt();
+            int uid = in.readInt();
+            int gid = in.readInt();
+            int fileSize = in.readInt();
+            byte[] oidBytes = in.readNBytes(20);
+            short flags = in.readShort();
+            byte[] pathBytes = in.readNBytes(flags);
+
+            int paddingLength =  9 - ((7 + pathBytes.length) % 8);
+
+            byte[] padding = in.readNBytes(paddingLength);
+            Arrays.sort(padding);
+            if(padding[padding.length-1] != 0) {
+                throw new RuntimeException("padding should be all 0s");
+            }
+
+            Entry e = new Entry(
+                    Path.of(new String(pathBytes, StandardCharsets.UTF_8)),
+                    HexFormat.of().formatHex(oidBytes),
+                    ctime_sec,
+                    ctime_nano,
+                    mtime_sec,
+                    mtime_nano,
+                    dev,
+                    ino,
+                    mode,
+                    uid,
+                    gid,
+                    fileSize
+            );
+            entries.add(e);
+        }
+    }
+
+    private int readHeader(DataInputStream in) throws IOException {
+        String sig = new String(in.readNBytes(4));
+        if(!sig.equals("DIRC")) {
+            throw new RuntimeException("Invalid signature: "+sig);
+        }
+        int version = in.readInt();
+        if(version != 2) {
+            throw new RuntimeException("Unsupported index version: "+version);
+        }
+        return in.readInt();
     }
 
     public void add(Path path, String oid) {
@@ -39,12 +131,7 @@ public class Index {
     }
 
     public void commit() {
-        final MessageDigest sha1;
-        try {
-            sha1 = MessageDigest.getInstance("SHA-1");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
+        final MessageDigest sha1 = createSha1();
         try (DigestOutputStream stream = new DigestOutputStream(new FileOutputStream(tmpFile.toFile()), sha1)) {
 
             byte[] headerBytes = new byte[12];
@@ -54,7 +141,7 @@ public class Index {
             headerBuffer.putInt(entries.size());
             stream.write(headerBytes);
 
-            for( Entry e: entries) {
+            for (Entry e : entries) {
                 stream.write(e.data());
             }
             stream.flush();
@@ -64,6 +151,16 @@ public class Index {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static MessageDigest createSha1() {
+        final MessageDigest sha1;
+        try {
+            sha1 = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        return sha1;
     }
 
     Entry createEntry(Path path, String oid) {
@@ -76,59 +173,31 @@ public class Index {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        System.out.println(attributes);
-        return new Entry(root, path, oid, attributes);
+        try {
+            return new Entry(
+                    path,
+                    oid,
+                    Math.toIntExact(attributes.creationTime().toMillis() / 1000),
+                    attributes.creationTime().toInstant().get(ChronoField.NANO_OF_SECOND),
+                    Math.toIntExact(attributes.lastModifiedTime().toMillis() / 1000),
+                    attributes.lastModifiedTime().toInstant().get(ChronoField.NANO_OF_SECOND),
+                    Math.toIntExact((Long) Files.getAttribute(root.resolve(path), "unix:dev")),
+                    Math.toIntExact((Long) Files.getAttribute(root.resolve(path), "unix:ino")),
+                    attributes.permissions().contains(PosixFilePermission.OWNER_EXECUTE) ? EXECUTABLE_MODE : REGULAR_MODE,
+                    (Integer) Files.getAttribute(root.resolve(path), "unix:uid"),
+                    (Integer) Files.getAttribute(root.resolve(path), "unix:gid"),
+                    Math.toIntExact(Math.min(attributes.size(), Integer.MAX_VALUE))
+            );
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public record Entry(Path root, Path path, String oid, PosixFileAttributes attributes) {
-        static int REGULAR_MODE = 0100644;
-        static int EXECUTABLE_MODE = 0100755;
+    public record Entry(Path path, String oid, int ctime_sec, int ctime_nano, int mtime_sec, int mtime_nano, int dev,
+                        int ino, int mode, int uid, int gid, int size) {
 
-        public Path absolutePath() {
-            return root.resolve(path);
-        }
         public short flags() {
             return (short) Math.min(path.toString().length(), 0xfff);
-        }
-
-        public int mode() {
-            return attributes.permissions().contains(PosixFilePermission.OWNER_EXECUTE) ? EXECUTABLE_MODE : REGULAR_MODE;
-        }
-
-        public Integer ino() throws IOException {
-            return Math.toIntExact((Long) Files.getAttribute(absolutePath(), "unix:ino"));
-        }
-
-        public Integer dev() throws IOException {
-            return Math.toIntExact((Long) Files.getAttribute(absolutePath(), "unix:dev"));
-        }
-
-        public Integer ctime_sec() throws IOException {
-            return Math.toIntExact(attributes.creationTime().toMillis() / 1000);
-        }
-
-        public Integer ctime_nano() throws IOException {
-            return attributes.creationTime().toInstant().get(ChronoField.NANO_OF_SECOND);
-        }
-
-        public Integer mtime_sec() {
-            return Math.toIntExact(attributes.lastModifiedTime().toMillis() / 1000);
-        }
-
-        public Integer mtime_nano() {
-            return attributes.lastModifiedTime().toInstant().get(ChronoField.NANO_OF_SECOND);
-        }
-
-        public Integer uid() throws IOException {
-            return (Integer) Files.getAttribute(absolutePath(), "unix:uid");
-        }
-
-        public Integer gid() throws IOException {
-            return (Integer) Files.getAttribute(absolutePath(), "unix:gid");
-        }
-
-        public Integer size() throws IOException {
-            return Math.toIntExact(Math.min(attributes.size(), Integer.MAX_VALUE));
         }
 
         public byte[] oidBytes() {
@@ -144,24 +213,20 @@ public class Index {
             length += 8 - (length % 8);
             byte[] bytes = new byte[length];
             ByteBuffer buffer = ByteBuffer.wrap(bytes);
-            try {
-                buffer.putInt(ctime_sec());
-                buffer.putInt(ctime_nano());
-                buffer.putInt(mtime_sec());
-                buffer.putInt(mtime_nano());
-                buffer.putInt(dev());
-                buffer.putInt(ino());
-                buffer.putInt(mode());
-                buffer.putInt(uid());
-                buffer.putInt(gid());
-                buffer.putInt(size());
-                buffer.put(oidBytes());
-                buffer.putShort(flags());
-                buffer.put(pathBytes());
-                buffer.put((byte) 0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            buffer.putInt(ctime_sec());
+            buffer.putInt(ctime_nano());
+            buffer.putInt(mtime_sec());
+            buffer.putInt(mtime_nano());
+            buffer.putInt(dev());
+            buffer.putInt(ino());
+            buffer.putInt(mode());
+            buffer.putInt(uid());
+            buffer.putInt(gid());
+            buffer.putInt(size());
+            buffer.put(oidBytes());
+            buffer.putShort(flags());
+            buffer.put(pathBytes());
+            buffer.put((byte) 0);
             return bytes;
         }
     }

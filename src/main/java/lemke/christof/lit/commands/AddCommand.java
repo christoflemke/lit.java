@@ -4,6 +4,7 @@ import lemke.christof.lit.*;
 import lemke.christof.lit.model.Blob;
 
 import java.io.IOException;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -11,13 +12,18 @@ import java.util.stream.Stream;
 public record AddCommand(Workspace ws, Database db, Index idx, String[] args) implements Runnable {
     @Override
     public void run() {
-        files().forEach((path) -> {
-            byte[] bytes = ws.read(path);
-            Blob blob = new Blob(bytes);
-            db.write(blob);
-            idx.add(path, blob.oid());
-        });
-        idx.commit();
+        try(FileLock lock = idx.tryLock()){
+            idx.load();
+            files().forEach((path) -> {
+                byte[] bytes = ws.read(path);
+                Blob blob = new Blob(bytes);
+                db.write(blob);
+                idx.add(path, blob.oid());
+            });
+            idx.commit();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     Stream<Path> files() {

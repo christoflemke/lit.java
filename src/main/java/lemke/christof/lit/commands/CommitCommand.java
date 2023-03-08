@@ -14,22 +14,18 @@ import java.util.stream.Collectors;
 public record CommitCommand(Workspace workspace, Database db, Environment env, Refs refs) implements Runnable {
     @Override
     public void run() {
-        try {
-            Workspace.BuildResult result = workspace.buildTree();
-            for (Blob b : result.blobs()) {
-                db.write(b);
-            }
-            for (Tree t : result.trees()) {
-                db.write(t);
-            }
-            String message = readMessage();
-            String parent = refs.readHead();
-            Commit commit = new Commit(parent, result.root().oid(), Author.createAuthor(env), Author.createCommitter(env), message);
-            db.write(commit);
-            refs.updateHead(commit.oid());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        Workspace.BuildResult result = workspace.buildTree();
+        for (Blob b : result.blobs()) {
+            db.write(b);
         }
+        for (Tree t : result.trees()) {
+            db.write(t);
+        }
+        String message = readMessage();
+        String parent = refs.readHead();
+        Commit commit = new Commit(parent, result.root().oid(), Author.createAuthor(env), Author.createCommitter(env), message);
+        db.write(commit);
+        refs.updateHead(commit.oid());
     }
 
     private String readMessage() {

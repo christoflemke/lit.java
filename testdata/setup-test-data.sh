@@ -33,11 +33,13 @@ export GIT_AUTHOR_EMAIL="doesnotexist@gmail.com"
   git commit -m 'second commit'
 )
 
+lit() {
+  java -jar $REPO_ROOT/build/libs/lit.java-1.0-SNAPSHOT.jar "${@}"
+}
+
 (
   set -e
-  lit() {
-    java -jar $REPO_ROOT/build/libs/lit.java-1.0-SNAPSHOT.jar "${@}"
-  }
+
   MY_REPO_PATH=my-repo
   rm -rf "$MY_REPO_PATH"
   lit init $MY_REPO_PATH
@@ -51,4 +53,23 @@ export GIT_AUTHOR_EMAIL="doesnotexist@gmail.com"
   chmod u+x bin/hi.sh
   echo 'world' > bin/world.txt
   echo 'second commit' | lit commit
+
+  echo '123' > index.test
+  lit add index.test
+)
+
+(
+  set -e
+  REF_REPO_PATH=index-repo
+  rm -rf "$REF_REPO_PATH"
+  git init $REF_REPO_PATH
+  cd $REF_REPO_PATH
+  echo '123' > index.test
+  lit add index.test
+  cp .git/index ../lit-index
+  hexdump -C .git/index > ../lit-index.hex
+  rm .git/index
+  git add index.test
+  cp .git/index ../git-index
+  hexdump -C .git/index > ../git-index.hex
 )

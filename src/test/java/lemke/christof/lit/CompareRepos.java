@@ -1,6 +1,7 @@
 package lemke.christof.lit;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -51,4 +52,14 @@ public class CompareRepos {
         byte[] referenceBytes = Files.readAllBytes(referencePath);
         assertEquals(HexFormat.of().formatHex(referenceBytes), HexFormat.of().formatHex(actualBytes));
     }
+
+    @Test
+    public void compareIndex() throws IOException {
+        Path actualPath = Path.of("testdata", "lit-index.hex");
+        Path referencePath = Path.of("testdata", "git-index.hex");
+        byte[] actualBytes = Files.readAllBytes(actualPath);
+        byte[] referenceBytes = Files.readAllBytes(referencePath);
+        assertEquals(HexFormat.of().formatHex(referenceBytes), HexFormat.of().formatHex(actualBytes));
+    }
+
 }

@@ -1,0 +1,53 @@
+package lemke.christof.lit;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.stream.Stream;
+
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+public class IndexEntryTest {
+    private static Path path;
+    private static Index.Entry entry;
+
+    @BeforeAll
+    public static void setup() throws IOException {
+        Path dir = Files.createTempDirectory("test-");
+        path = Files.createTempFile(dir, "test-", null);
+        entry = new Index(dir).createEntry(path, "1234");
+    }
+
+    public static Stream<String> intMethods() {
+        return Stream.of(
+                "ctime_sec",
+                "ctime_nano",
+                "mtime_sec",
+                "mtime_nano",
+                "dev",
+                "ino",
+                "mode",
+                "uid",
+                "gid",
+                "size"
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("intMethods")
+    public void testIntValue(String methodName) throws Exception {
+        Method method = Index.Entry.class.getDeclaredMethod(methodName);
+        Object result = method.invoke(entry);
+        assertThat(result, isA(Integer.class));
+    }
+
+
+}

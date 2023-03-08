@@ -14,15 +14,13 @@ import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.temporal.ChronoField;
-import java.util.ArrayList;
-import java.util.HexFormat;
-import java.util.List;
+import java.util.*;
 
 public class Index {
 
     private final Path tmpFile;
     private final Path indexPath;
-    private final List<Entry> entries = new ArrayList<>();
+    private final Set<Entry> entries = new TreeSet<>(Comparator.comparing(o -> o.path));
     private final Path root;
 
     public Index(Path root) {

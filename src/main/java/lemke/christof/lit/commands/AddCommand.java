@@ -9,12 +9,14 @@ import java.nio.file.Path;
 public record AddCommand (Workspace ws, Database db, Index idx, String[] args) implements Runnable {
     @Override
     public void run() {
-        Path path = Path.of(args[1]);
-        byte[] bytes = ws.read(path);
-        Blob blob = new Blob(bytes);
-        Object stat = null;
-        db.write(blob);
-        idx.add(path, blob.oid());
+        for (int i = 1; i < args.length; i++) {
+            Path path = Path.of(args[i]);
+            byte[] bytes = ws.read(path);
+            Blob blob = new Blob(bytes);
+            Object stat = null;
+            db.write(blob);
+            idx.add(path, blob.oid());
+        }
         idx.commit();
     }
 }

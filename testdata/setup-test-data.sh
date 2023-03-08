@@ -64,12 +64,14 @@ lit() {
   rm -rf "$REF_REPO_PATH"
   git init $REF_REPO_PATH
   cd $REF_REPO_PATH
-  echo '123' > index.test
-  lit add index.test
+  echo '123' > aindex.test
+  echo '456' > bindex.test
+  lit add bindex.test aindex.test
   cp .git/index ../lit-index
   hexdump -C .git/index > ../lit-index.hex
+
   rm .git/index
-  git add index.test
+  git add bindex.test aindex.test
   cp .git/index ../git-index
   hexdump -C .git/index > ../git-index.hex
 )

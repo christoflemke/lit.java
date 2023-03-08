@@ -9,15 +9,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class IndexTest {
     @Test
     public void testIndex() throws IOException {
-        Path directory = Files.createTempDirectory("test-");
-        Files.createDirectories(directory.resolve(".git"));
-        Path path = directory.resolve("test");
+        Path root = Files.createTempDirectory("test-");
+        Files.createDirectories(root.resolve(".git"));
+
+        Path path = root.resolve("test");
         Files.writeString(path, "foo");
-        Index index = new Index(directory);
-        index.add(directory.relativize(path), "12348705fdbd3608cddbe904b67c731f3234c45b");
+
+        Index index = new Index(root);
+        index.add(root.relativize(path), "12348705fdbd3608cddbe904b67c731f3234c45b");
         index.commit();
 
-        long size = Files.size(directory.resolve(".git").resolve("index"));
+        long size = Files.size(root.resolve(".git").resolve("index"));
         assertEquals(104, size);
     }
 }

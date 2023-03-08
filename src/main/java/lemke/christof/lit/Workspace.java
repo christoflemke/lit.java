@@ -15,8 +15,25 @@ import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public record Workspace (Path root){
+
+    public boolean isDirectory(Path path) {
+        return root.resolve(path).toFile().isDirectory();
+    }
+
+    public Stream<Path> list(Path start) throws IOException {
+        return Files.list(root.resolve(start));
+    }
+
+    public Path toRelativePath(Path path) {
+        if (path.isAbsolute()) {
+            return root.relativize(path);
+        } else {
+            return path;
+        }
+    }
 
     record FileTree (Path path, List<FileTree> children) {
         public String print(int indent) {

@@ -25,7 +25,7 @@ public class IndexEntryTest {
         Path root = Files.createTempDirectory("test-");
         path = Files.createTempFile(root, "test-", null);
         Workspace ws = new Workspace(root);
-        entry = new Index(ws).createEntry(path, "1234");
+        entry = new Index(ws).createEntry(ws.toRelativePath(path), "1234");
     }
 
     public static Stream<String> intMethods() {

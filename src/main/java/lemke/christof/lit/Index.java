@@ -21,8 +21,7 @@ import java.time.temporal.ChronoField;
 import java.util.*;
 
 public class Index {
-    static int REGULAR_MODE = 0100644;
-    static int EXECUTABLE_MODE = 0100755;
+
     private final Path tmpFile;
     private final Path indexPath;
     private final Set<Entry> entries = new TreeSet<>(Comparator.comparing(o -> o.path));
@@ -191,38 +190,12 @@ public class Index {
     }
 
     Entry createEntry(Path path, String oid) {
-        PosixFileAttributeView fileAttributeView = Files.getFileAttributeView(ws.resolve(path), PosixFileAttributeView.class);
-        final PosixFileAttributes attributes;
-        final Long inode;
-        try {
-            attributes = fileAttributeView.readAttributes();
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-
-        try {
-            FileStat stat = new FileStat(
-                    Math.toIntExact(attributes.creationTime().toMillis() / 1000),
-                    attributes.creationTime().toInstant().get(ChronoField.NANO_OF_SECOND),
-                    Math.toIntExact(attributes.lastModifiedTime().toMillis() / 1000),
-                    attributes.lastModifiedTime().toInstant().get(ChronoField.NANO_OF_SECOND),
-                    Math.toIntExact((Long) Files.getAttribute(ws.resolve(path), "unix:dev")),
-                    Math.toIntExact((Long) Files.getAttribute(ws.resolve(path), "unix:ino")),
-                    attributes.permissions().contains(PosixFilePermission.OWNER_EXECUTE) ? EXECUTABLE_MODE : REGULAR_MODE,
-                    (Integer) Files.getAttribute(ws.resolve(path), "unix:uid"),
-                    (Integer) Files.getAttribute(ws.resolve(path), "unix:gid"),
-                    Math.toIntExact(Math.min(attributes.size(), Integer.MAX_VALUE))
-            );
-            return new Entry(
-                    path,
-                    oid,
-                    stat
-            );
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        FileStat stat = ws.stat(path);
+        return new Entry(
+            path,
+            oid,
+            stat
+        );
     }
 
     public record Entry(Path path, String oid, FileStat stat) {

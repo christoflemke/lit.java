@@ -2,11 +2,16 @@ package lemke.christof.lit;
 
 import lemke.christof.lit.model.Blob;
 import lemke.christof.lit.model.Entry;
+import lemke.christof.lit.model.FileStat;
 import lemke.christof.lit.model.Tree;
 
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -123,6 +128,39 @@ public record Workspace (Path root){
     public byte[] read(Path f) {
         try {
             return Files.readAllBytes(root.resolve(f));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    static int REGULAR_MODE = 0100644;
+    static int EXECUTABLE_MODE = 0100755;
+    public FileStat stat(Path path) {
+        if(path.isAbsolute()) {
+            throw new RuntimeException("Expected relative path");
+        }
+        Path absolutePath = resolve(path);
+        PosixFileAttributeView fileAttributeView = Files.getFileAttributeView(absolutePath, PosixFileAttributeView.class);
+        final PosixFileAttributes attributes;
+        final Long inode;
+        try {
+            attributes = fileAttributeView.readAttributes();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            return new FileStat(
+                    Math.toIntExact(attributes.creationTime().toMillis() / 1000),
+                    attributes.creationTime().toInstant().get(ChronoField.NANO_OF_SECOND),
+                    Math.toIntExact(attributes.lastModifiedTime().toMillis() / 1000),
+                    attributes.lastModifiedTime().toInstant().get(ChronoField.NANO_OF_SECOND),
+                    Math.toIntExact((Long) Files.getAttribute(absolutePath, "unix:dev")),
+                    Math.toIntExact((Long) Files.getAttribute(absolutePath, "unix:ino")),
+                    attributes.permissions().contains(PosixFilePermission.OWNER_EXECUTE) ? EXECUTABLE_MODE : REGULAR_MODE,
+                    (Integer) Files.getAttribute(absolutePath, "unix:uid"),
+                    (Integer) Files.getAttribute(absolutePath, "unix:gid"),
+                    Math.toIntExact(Math.min(attributes.size(), Integer.MAX_VALUE))
+            );
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

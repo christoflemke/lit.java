@@ -28,6 +28,8 @@ public class Main {
                 return new TestCommand();
             case "add":
                 return new AddCommand(repo);
+            case "status":
+                return new StatusCommand(repo);
             default:
                 System.err.println("Unknown command: " + command);
                 System.exit(1);

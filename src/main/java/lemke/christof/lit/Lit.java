@@ -3,10 +3,12 @@ package lemke.christof.lit;
 import lemke.christof.lit.commands.AddCommand;
 import lemke.christof.lit.commands.CommitCommand;
 import lemke.christof.lit.commands.InitCommand;
+import lemke.christof.lit.commands.StatusCommand;
 
 import java.nio.file.Path;
 
 public class Lit {
+    public static final String[] NO_ARGS = {};
     private final Repository repo;
 
     public Lit(Repository repo) {
@@ -18,11 +20,14 @@ public class Lit {
     }
 
     public void commit() {
-        new CommitCommand(repo).run(new String[] {});
+        new CommitCommand(repo).run(NO_ARGS);
     }
 
     public void init(String... args) {
         new InitCommand().run(args);
     }
 
+    public void status() {
+        new StatusCommand(repo).run(NO_ARGS);
+    }
 }

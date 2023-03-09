@@ -67,6 +67,7 @@ public record Workspace (Path root){
             return Files.list(root)
                     .filter(p -> !Files.isDirectory(p))
                     .map(f -> root.relativize(f))
+                    .sorted()
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException(e);

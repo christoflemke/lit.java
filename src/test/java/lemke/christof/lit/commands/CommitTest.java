@@ -1,14 +1,15 @@
 package lemke.christof.lit.commands;
 
-import lemke.christof.lit.*;
+import lemke.christof.lit.Index;
+import lemke.christof.lit.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.stream.Stream;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 public class CommitTest {
 
@@ -42,5 +43,10 @@ public class CommitTest {
 
         add("foo.txt", "bin/bar.txt");
         commit();
+
+        Index index = repo.createIndex();
+        index.load();
+
+        assertEquals(2, index.entries().size());
     }
 }

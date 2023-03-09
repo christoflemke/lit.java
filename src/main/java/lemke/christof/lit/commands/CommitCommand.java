@@ -34,7 +34,7 @@ public record CommitCommand(Repository repo) implements Command {
     }
 
     private String readMessage() {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(repo.io().in()));
         return bufferedReader.lines().collect(Collectors.joining(""));
     }
 

@@ -61,5 +61,4 @@ public class CompareRepos {
         byte[] referenceBytes = Files.readAllBytes(referencePath);
         assertEquals(HexFormat.of().formatHex(referenceBytes), HexFormat.of().formatHex(actualBytes));
     }
-
 }

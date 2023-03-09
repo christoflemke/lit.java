@@ -13,14 +13,17 @@ public record AddCommand(Workspace ws, Database db, Index idx, String[] args) im
     @Override
     public void run() {
         try(FileLock lock = idx.tryLock()){
-            idx.load();
-            files().forEach((path) -> {
-                byte[] bytes = ws.read(path);
-                Blob blob = new Blob(bytes);
-                db.write(blob);
-                idx.add(path, blob.oid());
-            });
-            idx.commit();
+            try {
+                idx.load();
+                files().forEach((path) -> {
+                    byte[] bytes = ws.read(path);
+                    Blob blob = idx.add(path);
+                    db.write(blob);
+                });
+                idx.commit();
+            } finally {
+                idx.unlock(lock);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

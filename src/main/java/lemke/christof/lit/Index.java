@@ -1,5 +1,7 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.model.Blob;
+
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
@@ -23,13 +25,13 @@ public class Index {
     private final Path tmpFile;
     private final Path indexPath;
     private final Set<Entry> entries = new TreeSet<>(Comparator.comparing(o -> o.path));
-    private final Path root;
     private final Path lockPath;
+    private final Workspace ws;
 
-    public Index(Path root) {
-        this.root = root;
-        this.indexPath = root.resolve(".git").resolve("index");
-        this.lockPath = root.resolve(".git").resolve("index.lock");
+    public Index(Workspace ws) {
+        this.ws = ws;
+        this.indexPath = ws.resolve(".git").resolve("index");
+        this.lockPath = ws.resolve(".git").resolve("index.lock");
         try {
             this.tmpFile = Files.createTempFile("index-", null);
         } catch (IOException e) {
@@ -44,6 +46,12 @@ public class Index {
     public FileLock tryLock() throws IOException {
         return new RandomAccessFile(lockPath.toFile(), "rw").getChannel().tryLock();
     }
+
+    public void unlock(FileLock lock) throws IOException {
+        lock.release();
+        Files.delete(lockPath);
+    }
+
 
     private DataInputStream openStream(MessageDigest digest) throws FileNotFoundException {
         InputStream in = new FileInputStream(indexPath.toFile());
@@ -125,9 +133,15 @@ public class Index {
         return in.readInt();
     }
 
-    public void add(Path path, String oid) {
-        Entry entry = createEntry(path, oid);
+    public Blob add(Path path) {
+        Blob blob = new Blob(ws.read(path));
+        Entry entry = createEntry(path, blob.oid());
         entries.add(entry);
+        return blob;
+    }
+
+    public Optional<Entry> get(Path path) {
+        return entries.stream().filter(e -> e.path.equals(path)).findFirst();
     }
 
     public void commit() {
@@ -164,7 +178,7 @@ public class Index {
     }
 
     Entry createEntry(Path path, String oid) {
-        PosixFileAttributeView fileAttributeView = Files.getFileAttributeView(root.resolve(path), PosixFileAttributeView.class);
+        PosixFileAttributeView fileAttributeView = Files.getFileAttributeView(ws.resolve(path), PosixFileAttributeView.class);
         final PosixFileAttributes attributes;
         final Long inode;
         try {
@@ -181,11 +195,11 @@ public class Index {
                     attributes.creationTime().toInstant().get(ChronoField.NANO_OF_SECOND),
                     Math.toIntExact(attributes.lastModifiedTime().toMillis() / 1000),
                     attributes.lastModifiedTime().toInstant().get(ChronoField.NANO_OF_SECOND),
-                    Math.toIntExact((Long) Files.getAttribute(root.resolve(path), "unix:dev")),
-                    Math.toIntExact((Long) Files.getAttribute(root.resolve(path), "unix:ino")),
+                    Math.toIntExact((Long) Files.getAttribute(ws.resolve(path), "unix:dev")),
+                    Math.toIntExact((Long) Files.getAttribute(ws.resolve(path), "unix:ino")),
                     attributes.permissions().contains(PosixFilePermission.OWNER_EXECUTE) ? EXECUTABLE_MODE : REGULAR_MODE,
-                    (Integer) Files.getAttribute(root.resolve(path), "unix:uid"),
-                    (Integer) Files.getAttribute(root.resolve(path), "unix:gid"),
+                    (Integer) Files.getAttribute(ws.resolve(path), "unix:uid"),
+                    (Integer) Files.getAttribute(ws.resolve(path), "unix:gid"),
                     Math.toIntExact(Math.min(attributes.size(), Integer.MAX_VALUE))
             );
         } catch (IOException e) {

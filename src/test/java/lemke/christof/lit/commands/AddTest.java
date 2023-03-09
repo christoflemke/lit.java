@@ -13,6 +13,7 @@ public class AddTest {
     public void testAdd() throws Exception {
         Path root = Files.createTempDirectory("test-");
         Files.createDirectories(root.resolve(".git"));
+        Workspace ws = new Workspace(root);
 
         Path path = root.resolve("test");
         Files.writeString(path, "foo");
@@ -23,7 +24,7 @@ public class AddTest {
         Files.writeString(subFile, "abc");
 
         String[] args = {"add", "test", "sub"};
-        AddCommand command = new AddCommand(new Workspace(root), new Database(root), new Index(root), args);
+        AddCommand command = new AddCommand(new Workspace(root), new Database(root), new Index(ws), args);
 
         command.run();
     }

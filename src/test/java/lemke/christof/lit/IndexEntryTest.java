@@ -21,9 +21,10 @@ public class IndexEntryTest {
 
     @BeforeAll
     public static void setup() throws IOException {
-        Path dir = Files.createTempDirectory("test-");
-        path = Files.createTempFile(dir, "test-", null);
-        entry = new Index(dir).createEntry(path, "1234");
+        Path root = Files.createTempDirectory("test-");
+        path = Files.createTempFile(root, "test-", null);
+        Workspace ws = new Workspace(root);
+        entry = new Index(ws).createEntry(path, "1234");
     }
 
     public static Stream<String> intMethods() {

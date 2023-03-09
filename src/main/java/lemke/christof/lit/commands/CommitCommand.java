@@ -14,10 +14,9 @@ import java.util.stream.Collectors;
 public record CommitCommand(Workspace workspace, Database db, Environment env, Refs refs) implements Runnable {
     @Override
     public void run() {
-        Workspace.BuildResult result = workspace.buildTree();
-        for (Blob b : result.blobs()) {
-            db.write(b);
-        }
+        Index idx = new Index(workspace);
+        idx.load();
+        Workspace.BuildResult result = workspace.buildTree(idx);
         for (Tree t : result.trees()) {
             db.write(t);
         }

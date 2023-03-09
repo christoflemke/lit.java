@@ -16,7 +16,7 @@ public class Main {
         Path pwd = Path.of("").toAbsolutePath();
         Workspace ws = new Workspace(pwd);
         Database db = new Database(pwd);
-        Index idx = new Index(pwd);
+        Index idx = new Index(ws);
         Environment env = new Environment();
         Refs refs = new Refs(pwd);
         switch (args[0]) {

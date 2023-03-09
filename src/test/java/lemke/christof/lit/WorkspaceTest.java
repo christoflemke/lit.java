@@ -6,10 +6,8 @@ import lemke.christof.lit.model.Tree;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,12 +25,19 @@ public class WorkspaceTest {
 
     @Test
     public void testListFilesRecursive() throws IOException {
-        Path tmpDir = Files.createTempDirectory("test");
-        Files.writeString(tmpDir.resolve("foo.txt"), "foo");
-        Files.createDirectories(tmpDir.resolve("bin"));
-        Files.writeString(tmpDir.resolve("bin").resolve("bar.txt"), "bar");
+        Path root = Files.createTempDirectory("test");
+        Path fooPath = root.resolve("foo.txt");
+        Files.writeString(fooPath, "foo");
+        Files.createDirectories(root.resolve("bin"));
+        Path barPath = root.resolve("bin").resolve("bar.txt");
+        Files.writeString(barPath, "bar");
 
-        Workspace.BuildResult result = new Workspace(tmpDir).buildTree();
+        Workspace ws = new Workspace(root);
+        Index idx = new Index(ws);
+        idx.add(ws.toRelativePath(fooPath));
+        idx.add(ws.toRelativePath(barPath));
+
+        Workspace.BuildResult result = ws.buildTree(idx);
 
         Entry binEntry = new Entry(Path.of("bin"), "894306874c6757044f9df1b03119638a0fef743d");
         Entry fooEntry = new Entry(Path.of("foo.txt"), "19102815663d23f8b75a47e7a01965dcdc96468c");
@@ -43,12 +48,8 @@ public class WorkspaceTest {
                 fooEntry
         ));
 
-        System.out.println(result.toString());
+        System.out.println(result);
         assertEquals(expectedTree, result.root());
-
-        assertEquals(2, result.blobs().size(), 2);
-        assertEquals(result.blobs().get(0), Blob.fromString("bar"));
-        assertEquals(result.blobs().get(1), Blob.fromString("foo"));
 
         assertEquals(2, result.trees().size());
         assertEquals(

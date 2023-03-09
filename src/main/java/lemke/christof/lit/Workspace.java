@@ -12,6 +12,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -33,6 +34,14 @@ public record Workspace (Path root){
         } else {
             return path;
         }
+    }
+
+    public Path resolve(String relativePath) {
+        return root.resolve(relativePath);
+    }
+
+    public Path resolve(Path relativePath) {
+        return root.resolve(relativePath);
     }
 
     record FileTree (Path path, List<FileTree> children) {
@@ -64,12 +73,11 @@ public record Workspace (Path root){
         }
     }
 
-    public record BuildResult (Tree root, List<Blob> blobs, List<Tree> trees) {}
+    public record BuildResult (Tree root, List<Tree> trees) {}
 
-    public BuildResult buildTree() {
+    public BuildResult buildTree(Index idx) {
         try {
             List<Tree> trees = new ArrayList<>();
-            List<Blob> blobs = new ArrayList<>();
             AtomicReference<Tree> rootTree = new AtomicReference<>();
             Files.walkFileTree(root, new SimpleFileVisitor<>() {
                 Stack<List<Entry>> children = new Stack<>();
@@ -100,13 +108,15 @@ public record Workspace (Path root){
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    Blob blob = new Blob(read(file));
-                    blobs.add(blob);
-                    children.peek().add(new Entry(root.relativize(file), blob.oid()));
+                    Path relativePath = root.relativize(file);
+                    Optional<Index.Entry> entry = idx.get(relativePath);
+                    if (entry.isPresent()) {
+                        children.peek().add(new Entry(relativePath, entry.get().oid()));
+                    }
                     return FileVisitResult.CONTINUE;
                 }
             });
-            return new BuildResult(rootTree.get(), blobs, trees);
+            return new BuildResult(rootTree.get(), trees);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

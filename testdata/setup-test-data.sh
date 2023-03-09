@@ -46,16 +46,17 @@ lit() {
   cd $MY_REPO_PATH
   echo 'hello' > hello.txt
   echo 'world' > world.txt
+  lit add hello.txt
+  lit add world.txt
   echo 'first commit' | lit commit
 
   mkdir bin
   echo 'hi!' > bin/hi.sh
   chmod u+x bin/hi.sh
   echo 'world' > bin/world.txt
+  lit add bin/hi.sh
+  lit add bin/world.txt
   echo 'second commit' | lit commit
-
-  echo '123' > index.test
-  lit add index.test
 )
 
 (

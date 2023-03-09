@@ -28,7 +28,7 @@ public class Index {
     private final Path lockPath;
     private final Workspace ws;
 
-    public Index(Workspace ws) {
+    Index(Workspace ws) {
         this.ws = ws;
         this.indexPath = ws.resolve(".git").resolve("index");
         this.lockPath = ws.resolve(".git").resolve("index.lock");

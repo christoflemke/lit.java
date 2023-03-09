@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 public record CommitCommand(Repository repo) implements Command {
     @Override
     public void run(String[] args) {
-        Index idx = new Index(repo.ws());
+        Index idx = repo.createIndex();
         idx.load();
         Workspace.BuildResult result = repo.ws().buildTree(idx);
         for (Tree t : result.trees()) {

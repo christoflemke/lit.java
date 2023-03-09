@@ -11,19 +11,20 @@ import java.util.stream.Stream;
 public record AddCommand(Repository repo) implements Command {
     @Override
     public void run(String[] args) {
-        try(FileLock lock = repo.idx().tryLock()){
+        Index idx = repo.createIndex();
+        try(FileLock lock = idx.tryLock()){
             if (lock == null) {
                 throw new RuntimeException("Failed to acquire index.lock");
             }
             try {
-                repo.idx().load();
+                idx.load();
                 files(args).forEach((path) -> {
-                    Blob blob = repo.idx().add(path);
+                    Blob blob = idx.add(path);
                     repo.db().write(blob);
                 });
-                repo.idx().commit();
+                idx.commit();
             } finally {
-                repo.idx().unlock(lock);
+                idx.unlock(lock);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

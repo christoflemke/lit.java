@@ -16,16 +16,16 @@ public record Author (String name, String email, ZonedDateTime dateTime) {
 
     public static Author createAuthor(Environment env) {
         return new Author(
-                env.getEnv("GIT_AUTHOR_NAME"),
-                env.getEnv("GIT_AUTHOR_EMAIL"),
+                env.get("GIT_AUTHOR_NAME"),
+                env.get("GIT_AUTHOR_EMAIL"),
                 env.getDate("GIT_AUTHOR_DATE")
         );
     }
 
     public static Author createCommitter(Environment env) {
         return new Author(
-                env.getEnv("GIT_AUTHOR_NAME"),
-                env.getEnv("GIT_AUTHOR_EMAIL"),
+                env.get("GIT_AUTHOR_NAME"),
+                env.get("GIT_AUTHOR_EMAIL"),
                 env.getDate("GIT_COMMITTER_DATE")
         );
     }

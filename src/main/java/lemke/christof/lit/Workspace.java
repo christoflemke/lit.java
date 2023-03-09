@@ -62,13 +62,12 @@ public record Workspace (Path root){
         }
     }
 
-    public List<Path> listFiles() {
+    public Stream<Path> listFiles() {
         try {
             return Files.list(root)
                     .filter(p -> !Files.isDirectory(p))
                     .map(f -> root.relativize(f))
-                    .sorted()
-                    .collect(Collectors.toList());
+                    .sorted();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

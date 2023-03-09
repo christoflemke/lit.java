@@ -1,21 +1,22 @@
 package lemke.christof.lit;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Environment {
-    public static final Pattern DATETIME_PATTERN = Pattern.compile("(\\d+) (.*)");
-
-    public String getEnv(String key) {
-        return System.getenv(key);
+public interface Environment {
+    static Environment createDefault() {
+        return key -> System.getenv(key);
     }
 
-    public ZonedDateTime getDate(String envConst) {
-        String authorDateString = getEnv(envConst);
+    Pattern DATETIME_PATTERN = Pattern.compile("(\\d+) (.*)");
+
+    String get(String key);
+
+    default ZonedDateTime getDate(String envConst) {
+        String authorDateString = get(envConst);
         if (authorDateString != null) {
             Matcher matcher = DATETIME_PATTERN.matcher(authorDateString);
             if (matcher.matches()) {

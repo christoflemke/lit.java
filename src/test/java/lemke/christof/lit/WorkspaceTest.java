@@ -19,7 +19,7 @@ public class WorkspaceTest {
         Files.createFile(tmpDir.resolve("foo.txt"));
         assertEquals(
                 List.of(Path.of("foo.txt")),
-                new Workspace(tmpDir).listFiles()
+                new Workspace(tmpDir).listFiles().toList()
         );
     }
 

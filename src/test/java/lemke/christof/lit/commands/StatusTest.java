@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StatusTest extends BaseTest {
     @Test
-    public void testListsUntrackedFilesInNameOrder() throws IOException {
-        create("file.txt", "foo");
-        create("another.txt", "foo");
+    public void testListsUntrackedFilesInNameOrder() {
+        create("file.txt");
+        create("another.txt");
 
         lit.status();
         assertEquals("""
@@ -18,4 +18,17 @@ public class StatusTest extends BaseTest {
                 """, output());
     }
 
+    @Test
+    public void testListsFilesAsUntrackedIfTheyAreNotInTheIndex() {
+        create("committed.txt");
+        lit.add("committed.txt");
+        lit.commit();
+
+        create("uncommitted.txt");
+
+        lit.status();
+        assertEquals("""
+                ?? uncommitted.txt
+                """, output());
+    }
 }

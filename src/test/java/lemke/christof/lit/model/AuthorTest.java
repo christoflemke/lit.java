@@ -19,7 +19,7 @@ public class AuthorTest {
         );
         Environment env = new Environment() {
             @Override
-            public String getEnv(String key) {
+            public String get(String key) {
                 return envMap.get(key);
             }
         };

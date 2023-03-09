@@ -6,6 +6,9 @@ import lemke.christof.lit.model.Blob;
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record AddCommand(Repository repo) implements Command {
@@ -18,10 +21,11 @@ public record AddCommand(Repository repo) implements Command {
             }
             try {
                 idx.load();
-                files(args).forEach((path) -> {
+                Set<Path> files = files(args).collect(Collectors.toSet());
+                for(Path path : files) {
                     Blob blob = idx.add(path);
                     repo.db().write(blob);
-                });
+                }
                 idx.commit();
             } finally {
                 idx.unlock(lock);
@@ -32,12 +36,15 @@ public record AddCommand(Repository repo) implements Command {
     }
 
     Stream<Path> files(String[] args) {
-        return Stream.of(args).flatMap(s -> files(Path.of(s))).map(p -> repo.ws().toRelativePath(p));
+        return Stream.of(args)
+                .map(Path::of)
+                .flatMap(this::files)
+                .map(p -> repo.ws().toRelativePath(p));
     }
 
     Stream<Path> files(Path start) {
         try {
-            return repo.ws().isDirectory(start) ? repo.ws().list(start) : Stream.of(start);
+            return repo.ws().isDirectory(start) ? repo.ws().list(start).flatMap(this::files) : Stream.of(start);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

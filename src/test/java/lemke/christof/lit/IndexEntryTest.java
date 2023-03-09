@@ -1,5 +1,6 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.model.FileStat;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,8 +46,8 @@ public class IndexEntryTest {
     @ParameterizedTest
     @MethodSource("intMethods")
     public void testIntValue(String methodName) throws Exception {
-        Method method = Index.Entry.class.getDeclaredMethod(methodName);
-        Object result = method.invoke(entry);
+        Method method = FileStat.class.getDeclaredMethod(methodName);
+        Object result = method.invoke(entry.stat());
         assertThat(result, isA(Integer.class));
     }
 

@@ -5,10 +5,7 @@ import lemke.christof.lit.model.Entry;
 import lemke.christof.lit.model.Tree;
 
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,11 +72,15 @@ public record Workspace (Path root){
 
     public record BuildResult (Tree root, List<Tree> trees) {}
 
+    public void walkFileTree(FileVisitor<? super java.nio.file.Path> visitor) throws IOException {
+        Files.walkFileTree(root, visitor);
+    }
+
     public BuildResult buildTree(Index idx) {
         try {
             List<Tree> trees = new ArrayList<>();
             AtomicReference<Tree> rootTree = new AtomicReference<>();
-            Files.walkFileTree(root, new SimpleFileVisitor<>() {
+            walkFileTree(new SimpleFileVisitor<>() {
                 Stack<List<Entry>> children = new Stack<>();
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {

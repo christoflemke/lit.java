@@ -1,6 +1,7 @@
 package lemke.christof.lit;
 
 import lemke.christof.lit.model.Blob;
+import lemke.christof.lit.model.FileStat;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -82,7 +83,7 @@ public class Index {
     }
 
     private void readEntries(DataInputStream in, int entryCount) throws IOException {
-        for(int i = 0; i < entryCount; i++) {
+        for (int i = 0; i < entryCount; i++) {
             int ctime_sec = in.readInt();
             int ctime_nano = in.readInt();
             int mtime_sec = in.readInt();
@@ -97,18 +98,15 @@ public class Index {
             short flags = in.readShort();
             byte[] pathBytes = in.readNBytes(flags);
 
-            int paddingLength =  9 - ((7 + pathBytes.length) % 8);
+            int paddingLength = 9 - ((7 + pathBytes.length) % 8);
 
             byte[] padding = in.readNBytes(paddingLength);
             Arrays.sort(padding);
-            if(padding[padding.length-1] != 0) {
+            if (padding[padding.length - 1] != 0) {
                 throw new RuntimeException("padding should be all 0s");
             }
 
-            Entry e = new Entry(
-                    Path.of(new String(pathBytes, StandardCharsets.UTF_8)),
-                    HexFormat.of().formatHex(oidBytes),
-                    ctime_sec,
+            FileStat stat = new FileStat(ctime_sec,
                     ctime_nano,
                     mtime_sec,
                     mtime_nano,
@@ -117,7 +115,13 @@ public class Index {
                     mode,
                     uid,
                     gid,
-                    fileSize
+                    fileSize);
+
+            Entry e = new Entry(
+                    Path.of(new String(pathBytes, StandardCharsets.UTF_8)),
+                    HexFormat.of().formatHex(oidBytes),
+                    stat
+
             );
             entries.add(e);
         }
@@ -125,12 +129,12 @@ public class Index {
 
     private int readHeader(DataInputStream in) throws IOException {
         String sig = new String(in.readNBytes(4));
-        if(!sig.equals("DIRC")) {
-            throw new RuntimeException("Invalid signature: "+sig);
+        if (!sig.equals("DIRC")) {
+            throw new RuntimeException("Invalid signature: " + sig);
         }
         int version = in.readInt();
-        if(version != 2) {
-            throw new RuntimeException("Unsupported index version: "+version);
+        if (version != 2) {
+            throw new RuntimeException("Unsupported index version: " + version);
         }
         return in.readInt();
     }
@@ -143,7 +147,14 @@ public class Index {
     }
 
     public Optional<Entry> get(Path path) {
+        if (path.isAbsolute()) {
+            throw new RuntimeException("Path is absolute: " + path);
+        }
         return entries.stream().filter(e -> e.path.equals(path)).findFirst();
+    }
+
+    public boolean contains(Path path) {
+        return get(path).isPresent();
     }
 
     public void commit() {
@@ -189,10 +200,10 @@ public class Index {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+
         try {
-            return new Entry(
-                    path,
-                    oid,
+            FileStat stat = new FileStat(
                     Math.toIntExact(attributes.creationTime().toMillis() / 1000),
                     attributes.creationTime().toInstant().get(ChronoField.NANO_OF_SECOND),
                     Math.toIntExact(attributes.lastModifiedTime().toMillis() / 1000),
@@ -204,13 +215,17 @@ public class Index {
                     (Integer) Files.getAttribute(ws.resolve(path), "unix:gid"),
                     Math.toIntExact(Math.min(attributes.size(), Integer.MAX_VALUE))
             );
+            return new Entry(
+                    path,
+                    oid,
+                    stat
+            );
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public record Entry(Path path, String oid, int ctime_sec, int ctime_nano, int mtime_sec, int mtime_nano, int dev,
-                        int ino, int mode, int uid, int gid, int size) {
+    public record Entry(Path path, String oid, FileStat stat) {
 
         public short flags() {
             return (short) Math.min(path.toString().length(), 0xfff);
@@ -229,16 +244,16 @@ public class Index {
             length += 8 - (length % 8);
             byte[] bytes = new byte[length];
             ByteBuffer buffer = ByteBuffer.wrap(bytes);
-            buffer.putInt(ctime_sec());
-            buffer.putInt(ctime_nano());
-            buffer.putInt(mtime_sec());
-            buffer.putInt(mtime_nano());
-            buffer.putInt(dev());
-            buffer.putInt(ino());
-            buffer.putInt(mode());
-            buffer.putInt(uid());
-            buffer.putInt(gid());
-            buffer.putInt(size());
+            buffer.putInt(stat.ctime_sec());
+            buffer.putInt(stat.ctime_nano());
+            buffer.putInt(stat.mtime_sec());
+            buffer.putInt(stat.mtime_nano());
+            buffer.putInt(stat.dev());
+            buffer.putInt(stat.ino());
+            buffer.putInt(stat.mode());
+            buffer.putInt(stat.uid());
+            buffer.putInt(stat.gid());
+            buffer.putInt(stat.size());
             buffer.put(oidBytes());
             buffer.putShort(flags());
             buffer.put(pathBytes());

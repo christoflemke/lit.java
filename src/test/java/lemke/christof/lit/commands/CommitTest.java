@@ -12,8 +12,8 @@ public class CommitTest extends BaseTest {
 
     @Test
     public void testCommit() throws IOException {
-        create("foo.txt", "foo");
-        create("bin/bar.txt", "bar");
+        write("foo.txt", "foo");
+        write("bin/bar.txt", "bar");
 
         lit.add("foo.txt", "bin/bar.txt");
         lit.commit();

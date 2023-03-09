@@ -1,13 +1,11 @@
 package lemke.christof.lit.commands;
 
-import lemke.christof.lit.Environment;
 import lemke.christof.lit.IO;
 import lemke.christof.lit.Lit;
 import lemke.christof.lit.Repository;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -16,17 +14,19 @@ import java.util.Map;
 public class BaseTest {
     Repository repo;
     Lit lit;
-    StringWriter out;
-    StringWriter err;
+    StringWriter out = new StringWriter();;
+    StringWriter err = new StringWriter();;
     Map<String,String> envMap = new HashMap<>();
 
-    @BeforeEach
-    public void setup() throws IOException {
-        Path root = Files.createTempDirectory("test-");
+    {
+        Path root = null;
+        try {
+            root = Files.createTempDirectory("test-");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         Repository r = Repository.create(root);
         byte[] inputBytes = new byte[]{};
-        out = new StringWriter();
-        err = new StringWriter();
         IO io = new IO() {
             @Override
             public InputStream in() {
@@ -48,11 +48,11 @@ public class BaseTest {
         lit.init(root.toString());
     }
 
-    void create(String path) {
-        create(path, "");
+    void write(String path) {
+        write(path, "");
     }
 
-    void create(String path, String data) {
+    void write(String path, String data) {
         try {
             Path fooPath = repo.ws().resolve(path);
             Files.createDirectories(fooPath.getParent());

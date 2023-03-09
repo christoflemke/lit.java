@@ -11,20 +11,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public record CommitCommand(Workspace workspace, Database db, Environment env, Refs refs) implements Runnable {
+public record CommitCommand(Repository repo) implements Command {
     @Override
-    public void run() {
-        Index idx = new Index(workspace);
+    public void run(String[] args) {
+        Index idx = new Index(repo.ws());
         idx.load();
-        Workspace.BuildResult result = workspace.buildTree(idx);
+        Workspace.BuildResult result = repo.ws().buildTree(idx);
         for (Tree t : result.trees()) {
-            db.write(t);
+            repo.db().write(t);
         }
         String message = readMessage();
-        String parent = refs.readHead();
-        Commit commit = new Commit(parent, result.root().oid(), Author.createAuthor(env), Author.createCommitter(env), message);
-        db.write(commit);
-        refs.updateHead(commit.oid());
+        String parent = repo.refs().readHead();
+        Commit commit = new Commit(
+                parent,
+                result.root().oid(),
+                Author.createAuthor(repo.env()),
+                Author.createCommitter(repo.env()),
+                message
+        );
+        repo.db().write(commit);
+        repo.refs().updateHead(commit.oid());
     }
 
     private String readMessage() {
@@ -33,6 +39,6 @@ public record CommitCommand(Workspace workspace, Database db, Environment env, R
     }
 
     Blob createBlob(Path f) {
-        return new Blob(workspace.read(f));
+        return new Blob(repo.ws().read(f));
     }
 }

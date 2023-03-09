@@ -1,33 +1,46 @@
 package lemke.christof.lit.commands;
 
 import lemke.christof.lit.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 public class CommitTest {
+
+    private Repository repo;
+
+    @BeforeEach
+    public void setup() throws IOException {
+        Path root = Files.createTempDirectory("test-");
+        repo = Repository.create(root);
+        new InitCommand().run(new String[] {root.toString()});
+    }
+
+    void create(String path, String data) throws IOException {
+        Path fooPath = repo.ws().resolve(path);
+        Files.createDirectories(fooPath.getParent());
+        Files.writeString(fooPath, data);
+    }
+
+    void add(String... files) {
+        new AddCommand(repo).run(files);
+    }
+
+    private void commit() {
+        new CommitCommand(repo).run(new String[]{});
+    }
+
     @Test
     public void testCommit() throws IOException {
-        Path root = Files.createTempDirectory("test-");
+        create("foo.txt", "foo");
+        create("bin/bar.txt", "bar");
 
-        Path fooPath = root.resolve("foo.txt");
-        Files.writeString(fooPath, "foo");
-        Files.createDirectories(root.resolve("bin"));
-        Path barPath = root.resolve("bin").resolve("bar.txt");
-        Files.writeString(barPath, "bar");
-
-        Workspace ws = new Workspace(root);
-        Database db = new Database(root);
-        Environment env = new Environment();
-        Refs refs = new Refs(root);
-
-        String[] args = {"add", ws.toRelativePath(fooPath).toString(), ws.toRelativePath(barPath).toString()};
-        new InitCommand(new String[] {"init", root.toString()}).run();
-        new AddCommand(ws, db, new Index(ws), args).run();
-        CommitCommand command = new CommitCommand(ws, db, env, refs);
-
-        command.run();
+        add("foo.txt", "bin/bar.txt");
+        commit();
     }
 }

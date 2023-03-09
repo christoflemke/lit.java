@@ -6,12 +6,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public record InitCommand(String[] args) implements Runnable {
+public record InitCommand() implements Command {
     @Override
-    public void run() {
+    public void run(String[] args) {
         Path repoPath = Path.of("");
-        if (args.length >= 2) {
-            repoPath = Path.of(args[1]);
+        if (args.length >= 1) {
+            repoPath = Path.of(args[0]);
         }
         Path gitPath = repoPath.resolve(".git");
         try {

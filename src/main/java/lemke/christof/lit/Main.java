@@ -1,11 +1,9 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.commands.AddCommand;
-import lemke.christof.lit.commands.CommitCommand;
-import lemke.christof.lit.commands.InitCommand;
-import lemke.christof.lit.commands.TestCommand;
+import lemke.christof.lit.commands.*;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args) {
@@ -14,27 +12,26 @@ public class Main {
             System.exit(1);
         }
         Path pwd = Path.of("").toAbsolutePath();
-        Workspace ws = new Workspace(pwd);
-        Database db = new Database(pwd);
-        Index idx = new Index(ws);
-        Environment env = new Environment();
-        Refs refs = new Refs(pwd);
-        switch (args[0]) {
+        Repository repo = Repository.create(pwd);
+        Command cmd = createCommand(args[0], repo);
+        String[] remainingArgs = Arrays.copyOfRange(args, 1, args.length);
+        cmd.run(remainingArgs);
+    }
+
+    private static Command createCommand(String command, Repository repo) {
+        switch (command) {
             case "commit":
-                new CommitCommand(ws, db, env, refs).run();
-                break;
+                return new CommitCommand(repo);
             case "init":
-                new InitCommand(args).run();
-                break;
+                return new InitCommand();
             case "test":
-                new TestCommand().run();
-                break;
+                return new TestCommand();
             case "add":
-                new AddCommand(ws, db, idx, args).run();
-                break;
+                return new AddCommand(repo);
             default:
-                System.err.println("Unknown command: "+ args[0]);
+                System.err.println("Unknown command: " + command);
                 System.exit(1);
+                return null;
         }
     }
 }

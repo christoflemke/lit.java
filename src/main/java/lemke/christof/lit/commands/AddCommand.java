@@ -5,40 +5,38 @@ import lemke.christof.lit.model.Blob;
 
 import java.io.IOException;
 import java.nio.channels.FileLock;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
-public record AddCommand(Workspace ws, Database db, Index idx, String[] args) implements Runnable {
+public record AddCommand(Repository repo) implements Command {
     @Override
-    public void run() {
-        try(FileLock lock = idx.tryLock()){
+    public void run(String[] args) {
+        try(FileLock lock = repo.idx().tryLock()){
             if (lock == null) {
                 throw new RuntimeException("Failed to acquire index.lock");
             }
             try {
-                idx.load();
-                files().forEach((path) -> {
-                    byte[] bytes = ws.read(path);
-                    Blob blob = idx.add(path);
-                    db.write(blob);
+                repo.idx().load();
+                files(args).forEach((path) -> {
+                    Blob blob = repo.idx().add(path);
+                    repo.db().write(blob);
                 });
-                idx.commit();
+                repo.idx().commit();
             } finally {
-                idx.unlock(lock);
+                repo.idx().unlock(lock);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    Stream<Path> files() {
-        return Stream.of(args).skip(1).flatMap(s -> files(Path.of(s))).map(p -> ws.toRelativePath(p));
+    Stream<Path> files(String[] args) {
+        return Stream.of(args).flatMap(s -> files(Path.of(s))).map(p -> repo.ws().toRelativePath(p));
     }
 
     Stream<Path> files(Path start) {
         try {
-            return ws.isDirectory(start) ? ws.list(start) : Stream.of(start);
+            return repo.ws().isDirectory(start) ? repo.ws().list(start) : Stream.of(start);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

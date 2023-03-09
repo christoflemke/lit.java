@@ -2,6 +2,7 @@ package lemke.christof.lit.commands;
 
 import lemke.christof.lit.Database;
 import lemke.christof.lit.Index;
+import lemke.christof.lit.Repository;
 import lemke.christof.lit.Workspace;
 import org.junit.jupiter.api.Test;
 
@@ -23,9 +24,9 @@ public class AddTest {
         Path subFile = sub.resolve("test.file");
         Files.writeString(subFile, "abc");
 
-        String[] args = {"add", "test", "sub"};
-        AddCommand command = new AddCommand(new Workspace(root), new Database(root), new Index(ws), args);
+        Repository repo = Repository.create(root);
 
-        command.run();
+        String[] args = {"test", "sub"};
+        new AddCommand(repo).run(args);
     }
 }

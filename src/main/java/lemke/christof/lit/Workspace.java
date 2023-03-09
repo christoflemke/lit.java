@@ -81,21 +81,18 @@ public record Workspace (Path root){
             AtomicReference<Tree> rootTree = new AtomicReference<>();
             Files.walkFileTree(root, new SimpleFileVisitor<>() {
                 Stack<List<Entry>> children = new Stack<>();
-                Path currentParent = null;
                 @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                     if (dir.endsWith(".git")) {
                         return FileVisitResult.SKIP_SUBTREE;
                     }
                     children.push(new ArrayList<>());
-                    currentParent = dir;
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
                     Tree tree = new Tree(children.pop());
-                    currentParent = currentParent.getParent();
                     trees.add(tree);
                     if(children.empty()) {
                         rootTree.set(tree);
@@ -107,7 +104,7 @@ public record Workspace (Path root){
                 }
 
                 @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     Path relativePath = root.relativize(file);
                     Optional<Index.Entry> entry = idx.get(relativePath);
                     if (entry.isPresent()) {

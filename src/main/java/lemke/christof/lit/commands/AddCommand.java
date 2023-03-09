@@ -13,6 +13,9 @@ public record AddCommand(Workspace ws, Database db, Index idx, String[] args) im
     @Override
     public void run() {
         try(FileLock lock = idx.tryLock()){
+            if (lock == null) {
+                throw new RuntimeException("Failed to acquire index.lock");
+            }
             try {
                 idx.load();
                 files().forEach((path) -> {

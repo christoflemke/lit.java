@@ -48,8 +48,10 @@ public class Index {
     }
 
     public void unlock(FileLock lock) throws IOException {
-        lock.release();
-        Files.delete(lockPath);
+        if (lock != null) {
+            lock.release();
+            Files.delete(lockPath);
+        }
     }
 
 

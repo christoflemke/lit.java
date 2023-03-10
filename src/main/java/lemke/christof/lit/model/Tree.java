@@ -1,10 +1,9 @@
 package lemke.christof.lit.model;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.HexFormat;
-import java.util.List;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public record Tree (List<Entry> entries) implements DbObject {
@@ -38,6 +37,35 @@ public record Tree (List<Entry> entries) implements DbObject {
             wrap.put(bs);
         }
         return result;
+    }
+
+    private static byte[] readUntil(ByteBuffer buffer, char stopByte) {
+        int start = buffer.position();
+        int stop = start;
+        while (buffer.hasRemaining() && buffer.get() != stopByte) {
+            stop++;
+        }
+        buffer.position(start);
+        byte[] bytes = new byte[stop - start];
+        buffer.get(bytes);
+        return bytes;
+    }
+
+    public static Tree fromBytes(byte[] data) {
+        ByteBuffer buff = ByteBuffer.wrap(data);
+        List<Entry> entries = new ArrayList<>();
+        while (buff.hasRemaining()) {
+            byte[] mode = readUntil(buff, ' ');
+            byte[] path = readUntil(buff, '\0');
+            buff.get();
+            byte[] oid = new byte[20];
+            buff.get(oid);
+            String modeString = new String(mode);
+            String pathString = new String(path);
+            String oidString = HexFormat.of().formatHex(oid);
+            entries.add(new Entry(Path.of(pathString), oidString, modeString));
+        }
+        return new Tree(entries);
     }
 
     @Override

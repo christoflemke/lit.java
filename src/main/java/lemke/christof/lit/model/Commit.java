@@ -1,8 +1,7 @@
 package lemke.christof.lit.model;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public record Commit (
@@ -30,5 +29,26 @@ public record Commit (
         items.add(message + "\n");
 
         return items.stream().collect(Collectors.joining("\n")).getBytes(StandardCharsets.UTF_8);
+    }
+
+    public static Commit fromBytes(byte[] data) {
+        Scanner scanner = new Scanner(new String(data));
+        Map<String, String> fields = new HashMap<>();
+        while (scanner.hasNext()) {
+            String line = scanner.nextLine();
+            if("".equals(line)) {
+                break;
+            }
+            String[] split = line.split(" ");
+            fields.put(split[0], split[1]);
+        }
+        String message = scanner.nextLine();
+        return new Commit(
+            fields.get("parent"),
+            fields.get("tree"),
+            Author.fromString(fields.get("author")),
+            Author.fromString(fields.get("committer")),
+            message
+        );
     }
 }

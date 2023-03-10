@@ -4,24 +4,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 
-public record Entry (Path name, String oid) {
-
-    private boolean executable() {
-        return Files.isExecutable(name);
-    }
+public record Entry (Path name, String oid, String mode) {
 
     public Path relativePath() {
         return name.getFileName();
-    }
-
-    public String mode() {
-        if (Files.isDirectory(name)) {
-            return "40000";
-        } else if(executable()) {
-            return "100755";
-        } else {
-            return "100644";
-        }
     }
 
     public static Comparator<Entry> byName = new Comparator<Entry>() {

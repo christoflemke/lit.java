@@ -1,5 +1,6 @@
 package lemke.christof.lit.commands;
 
+import lemke.christof.lit.BaseTest;
 import lemke.christof.lit.Index;
 import org.junit.jupiter.api.Test;
 

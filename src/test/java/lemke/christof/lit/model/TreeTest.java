@@ -11,8 +11,8 @@ public class TreeTest {
 
     Blob helloBlob = Blob.fromString("hello\n");
     Blob worldBlob = Blob.fromString("world\n");
-    Entry helloEntry = new Entry(Path.of("hello.txt"), helloBlob.oid());
-    Entry worldEntry = new Entry(Path.of("world.txt"), worldBlob.oid());
+    Entry helloEntry = new Entry(Path.of("hello.txt"), helloBlob.oid(), "100644");
+    Entry worldEntry = new Entry(Path.of("world.txt"), worldBlob.oid(), "100644");
     Tree tree = new Tree(List.of(helloEntry, worldEntry));
 
     @Test

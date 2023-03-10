@@ -33,4 +33,8 @@ public record Author (String name, String email, ZonedDateTime dateTime) {
     static DateTimeFormatter dateFormat() {
         return DateTimeFormatter.ofPattern("%s %z");
     }
+
+    public static Author fromString(String s) {
+        return null;
+    }
 }

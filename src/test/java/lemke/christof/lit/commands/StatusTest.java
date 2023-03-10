@@ -1,5 +1,6 @@
 package lemke.christof.lit.commands;
 
+import lemke.christof.lit.BaseTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

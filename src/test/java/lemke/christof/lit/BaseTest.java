@@ -1,4 +1,4 @@
-package lemke.christof.lit.commands;
+package lemke.christof.lit;
 
 import lemke.christof.lit.IO;
 import lemke.christof.lit.Lit;
@@ -14,11 +14,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BaseTest {
-    Repository repo;
-    Lit lit;
+    protected Repository repo;
+    protected Lit lit;
     StringWriter out = new StringWriter();;
     StringWriter err = new StringWriter();;
     Map<String,String> envMap = new HashMap<>();
+    {
+        envMap.put("GIT_AUTHOR_NAME", "Christof Lemke");
+        envMap.put("GIT_COMMITTER_NAME", "Christof Lemke");
+        envMap.put("GIT_AUTHOR_EMAIL", "doesnotexist@gmail.com");
+    }
 
     {
         Path root = null;
@@ -28,7 +33,7 @@ public class BaseTest {
             throw new RuntimeException(e);
         }
         Repository r = Repository.create(root);
-        byte[] inputBytes = new byte[]{};
+        byte[] inputBytes = "commit message".getBytes();
         IO io = new IO() {
             @Override
             public InputStream in() {
@@ -50,11 +55,11 @@ public class BaseTest {
         lit.init(root.toString());
     }
 
-    void write(String path) {
+    protected void write(String path) {
         write(path, "");
     }
 
-    void write(String path, String data) {
+    protected void write(String path, String data) {
         try {
             Path fooPath = repo.ws().resolve(path);
             Files.createDirectories(fooPath.getParent());
@@ -72,19 +77,19 @@ public class BaseTest {
         return repo.ws().resolve(path).toFile();
     }
 
-    void makeExecutable(String path) {
+    protected void makeExecutable(String path) {
         if(!resolveFile(path).setExecutable(true)) {
             throw new RuntimeException("Failed to make file executable: "+path);
         }
     }
 
-    void touch(String path) {
+    protected void touch(String path) {
         if (!resolveFile(path).setLastModified(System.currentTimeMillis())) {
             throw new RuntimeException("Failed to set last modified");
         }
     }
 
-    void delete(String path) {
+    protected void delete(String path) {
         delete(resolveFile(path));
     }
 
@@ -99,7 +104,7 @@ public class BaseTest {
         }
     }
 
-    String output() {
+    protected String output() {
         return out.toString();
     }
 }

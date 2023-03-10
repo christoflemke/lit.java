@@ -79,6 +79,16 @@ public record Workspace (Path root){
         Files.walkFileTree(root, visitor);
     }
 
+    private String mode(Path name) {
+        if (Files.isDirectory(name)) {
+            return "40000";
+        } else if(Files.isExecutable(name)) {
+            return "100755";
+        } else {
+            return "100644";
+        }
+    }
+
     public BuildResult buildTree(Index idx) {
         try {
             List<Tree> trees = new ArrayList<>();
@@ -101,7 +111,8 @@ public record Workspace (Path root){
                     if(children.empty()) {
                         rootTree.set(tree);
                     } else {
-                        children.peek().add(new Entry(root.relativize(dir), tree.oid()));
+                        Path path = root.relativize(dir);
+                        children.peek().add(new Entry(path, tree.oid(), mode(path)));
                     }
 
                     return FileVisitResult.CONTINUE;
@@ -112,7 +123,7 @@ public record Workspace (Path root){
                     Path relativePath = root.relativize(file);
                     Optional<Index.Entry> entry = idx.get(relativePath);
                     if (entry.isPresent()) {
-                        children.peek().add(new Entry(relativePath, entry.get().oid()));
+                        children.peek().add(new Entry(relativePath, entry.get().oid(), mode(relativePath)));
                     }
                     return FileVisitResult.CONTINUE;
                 }

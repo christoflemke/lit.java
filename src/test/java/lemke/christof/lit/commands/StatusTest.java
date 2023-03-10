@@ -130,5 +130,28 @@ public class StatusTest extends BaseTest {
 
             assertEquals("", output());
         }
+
+        @Test
+        public void itReportsDeletedFiles() {
+            delete("a/2.txt");
+
+            lit.status();
+
+            assertEquals("""
+                              D a/2.txt
+                             """, output());
+        }
+
+        @Test
+        public void itReportsFilesInDeletedDirectories() {
+            delete("a");
+
+            lit.status();
+
+            assertEquals("""
+                              D a/2.txt
+                              D a/b/3.txt
+                             """, output());
+        }
     }
 }

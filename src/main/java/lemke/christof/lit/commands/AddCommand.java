@@ -16,14 +16,14 @@ public record AddCommand(Repository repo) implements Command {
     @Override
     public void run(String[] args) {
         Index idx = repo.createIndex();
-        try(FileLock lock = idx.tryLock()){
+        try (FileLock lock = idx.tryLock()) {
             if (lock == null) {
                 throw new RuntimeException("Failed to acquire index.lock");
             }
             try {
                 idx.load();
                 Set<Path> files = files(args).collect(Collectors.toSet());
-                for(Path path : files) {
+                for (Path path : files) {
                     Blob blob = idx.add(path);
                     repo.db().write(blob);
                 }
@@ -38,14 +38,22 @@ public record AddCommand(Repository repo) implements Command {
 
     Stream<Path> files(String[] args) {
         return Stream.of(args)
-                .map(Path::of)
-                .flatMap(this::files)
-                .map(p -> repo.ws().toRelativePath(p));
+            .map(Path::of)
+            .flatMap(this::files)
+            .map(p -> repo.ws().toRelativePath(p));
     }
+
+    static Set<Path> IGNORED = Set.of(Path.of(".git"));
 
     Stream<Path> files(Path start) {
         try {
-            return repo.ws().isDirectory(start) ? repo.ws().list(start).flatMap(this::files) : Stream.of(start);
+            if (IGNORED.contains(repo.ws().toRelativePath(start))) {
+                return Stream.of();
+            } else if (repo.ws().isDirectory(start)) {
+                return repo.ws().list(start).flatMap(this::files);
+            } else {
+                return Stream.of(start);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

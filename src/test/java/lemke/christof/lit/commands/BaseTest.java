@@ -64,15 +64,38 @@ public class BaseTest {
         }
     }
 
+    private File resolveFile(String relativePath) {
+        Path path = Path.of(relativePath);
+        if(path.isAbsolute()) {
+            throw new RuntimeException("Expected relative path: "+relativePath);
+        }
+        return repo.ws().resolve(path).toFile();
+    }
+
     void makeExecutable(String path) {
-        if(!repo.ws().resolve(path).toFile().setExecutable(true)) {
+        if(!resolveFile(path).setExecutable(true)) {
             throw new RuntimeException("Failed to make file executable: "+path);
         }
     }
 
     void touch(String path) {
-        if (!repo.ws().resolve(path).toFile().setLastModified(System.currentTimeMillis())) {
+        if (!resolveFile(path).setLastModified(System.currentTimeMillis())) {
             throw new RuntimeException("Failed to set last modified");
+        }
+    }
+
+    void delete(String path) {
+        delete(resolveFile(path));
+    }
+
+    private void delete(File file) {
+        if(file.isDirectory()) {
+            for(File c : file.listFiles()) {
+                delete(c);
+            }
+        }
+        if(!file.delete()) {
+            throw new RuntimeException("Failed to delete file: "+file);
         }
     }
 

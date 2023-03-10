@@ -1,5 +1,6 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.commands.StatusCommand;
 import lemke.christof.lit.model.Blob;
 import lemke.christof.lit.model.FileStat;
 
@@ -152,10 +153,6 @@ public class Index {
         return entries.stream().filter(e -> e.path.equals(path)).findFirst();
     }
 
-    public boolean contains(Path path) {
-        return get(path).isPresent();
-    }
-
     public void commit() {
         final MessageDigest sha1 = createSha1();
         try (DigestOutputStream stream = new DigestOutputStream(new FileOutputStream(tmpFile.toFile()), sha1)) {
@@ -196,6 +193,10 @@ public class Index {
             oid,
             stat
         );
+    }
+
+    public String hash(Path relativePath) {
+        return new Blob(ws.read(relativePath)).oid();
     }
 
     public record Entry(Path path, String oid, FileStat stat) {

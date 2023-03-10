@@ -1,5 +1,6 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.commands.StatusCommand;
 import lemke.christof.lit.model.Blob;
 import lemke.christof.lit.model.Entry;
 import lemke.christof.lit.model.FileStat;
@@ -12,10 +13,7 @@ import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.temporal.ChronoField;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

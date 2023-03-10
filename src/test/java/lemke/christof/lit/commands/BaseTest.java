@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -59,6 +61,18 @@ public class BaseTest {
             Files.writeString(fooPath, data);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    void makeExecutable(String path) {
+        if(!repo.ws().resolve(path).toFile().setExecutable(true)) {
+            throw new RuntimeException("Failed to make file executable: "+path);
+        }
+    }
+
+    void touch(String path) {
+        if (!repo.ws().resolve(path).toFile().setLastModified(System.currentTimeMillis())) {
+            throw new RuntimeException("Failed to set last modified");
         }
     }
 

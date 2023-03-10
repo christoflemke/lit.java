@@ -14,9 +14,9 @@ public class StatusTest extends BaseTest {
 
         lit.status();
         assertEquals("""
-                ?? another.txt
-                ?? file.txt
-                """, output());
+                         ?? another.txt
+                         ?? file.txt
+                         """, output());
     }
 
     @Test
@@ -39,8 +39,8 @@ public class StatusTest extends BaseTest {
 
         lit.status();
         assertEquals("""
-                ?? uncommitted.txt
-                """, output());
+                         ?? uncommitted.txt
+                         """, output());
     }
 
     @Test
@@ -50,9 +50,9 @@ public class StatusTest extends BaseTest {
 
         lit.status();
         assertEquals("""
-                ?? dir/
-                ?? file.txt
-                """, output());
+                         ?? dir/
+                         ?? file.txt
+                         """, output());
     }
 
     @Test
@@ -66,18 +66,18 @@ public class StatusTest extends BaseTest {
 
         lit.status();
         assertEquals("""
-                ?? a/b/c/
-                ?? a/outer.txt
-                """, output());
+                         ?? a/b/c/
+                         ?? a/outer.txt
+                         """, output());
     }
 
     @Nested
-    public class IndexDifference extends BaseTest{
+    public class IndexDifference extends BaseTest {
         @BeforeEach
         public void setup() {
             write("1.txt", "one");
             write("a/2.txt", "two");
-            write("a/b/3.txt", "tree");
+            write("a/b/3.txt", "three");
             lit.add(".");
             lit.commit();
         }
@@ -95,10 +95,40 @@ public class StatusTest extends BaseTest {
 
             lit.status();
             assertEquals("""
-                     M 1.txt
-                     M a/2.txt
-                    """, output());
+                              M 1.txt
+                              M a/2.txt
+                             """, output());
         }
 
+        @Test
+        public void itReportsFilesThatChangedMode() {
+            makeExecutable("a/2.txt");
+
+            lit.status();
+
+            assertEquals("""
+                              M a/2.txt
+                             """, output());
+        }
+
+        @Test
+        public void itReportsFilesWithUnchangedSize() {
+            write("a/b/3.txt", "hello");
+
+            lit.status();
+
+            assertEquals("""
+                              M a/b/3.txt
+                             """, output());
+        }
+
+        @Test
+        public void itDoesNotReportFilesIfOnlyTheTimestampHasChanges() {
+            touch("1.txt");
+
+            lit.status();
+
+            assertEquals("", output());
+        }
     }
 }

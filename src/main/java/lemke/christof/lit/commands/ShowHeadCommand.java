@@ -26,7 +26,7 @@ public record ShowHeadCommand(Repository repo) implements Command {
     }
 
     private static void printTree(Database db, DbObject object, int pad) {
-        System.out.println(ident(pad) + object.type() + " " + object.oid());
+        System.out.println(ident(pad) + object.toString());
         if (object instanceof Tree) {
             Tree tree = (Tree) object;
             for (Entry e : tree.entries()) {

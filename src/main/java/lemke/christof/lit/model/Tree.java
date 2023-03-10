@@ -70,6 +70,6 @@ public record Tree (List<Entry> entries) implements DbObject {
 
     @Override
     public String toString() {
-        return oid() + " entries: "+entries;
+        return type() + " " + oid();
     }
 }

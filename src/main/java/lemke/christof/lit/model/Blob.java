@@ -15,7 +15,7 @@ public record Blob (byte[] data) implements DbObject {
 
     @Override
     public String toString() {
-        return oid();
+        return type() + " " + oid();
     }
 
     @Override

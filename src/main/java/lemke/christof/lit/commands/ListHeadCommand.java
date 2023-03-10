@@ -26,7 +26,7 @@ public record ListHeadCommand(Repository repo) implements Command {
             if (child instanceof Tree) {
                 listRecursive(db, (Tree) child, entryPath);
             } else if (child instanceof Blob) {
-                repo.io().out().println("" + e.mode() + " " + entryPath + " " + e.oid());
+                repo.io().out().println("" + e.mode() + " " + e.oid() + " " + entryPath);
             }
         }
     }

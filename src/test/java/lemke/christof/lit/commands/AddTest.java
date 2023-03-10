@@ -1,7 +1,5 @@
 package lemke.christof.lit.commands;
 
-import lemke.christof.lit.Database;
-import lemke.christof.lit.Index;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.Workspace;
 import org.junit.jupiter.api.Test;

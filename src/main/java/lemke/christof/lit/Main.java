@@ -32,6 +32,8 @@ public class Main {
                 return new StatusCommand(repo);
             case "show_head":
                 return new ShowHeadCommand(repo);
+            case "list_head":
+                return new ListHeadCommand(repo);
             default:
                 System.err.println("Unknown command: " + command);
                 System.exit(1);

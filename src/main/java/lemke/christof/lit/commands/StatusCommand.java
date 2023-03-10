@@ -4,8 +4,8 @@ import lemke.christof.lit.Index;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.model.FileStat;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
@@ -20,7 +20,7 @@ public record StatusCommand(Repository repo) implements Command {
 
     @Override
     public void run(String[] args) {
-        BufferedWriter out = repo.io().out();
+        PrintStream out = repo.io().out();
         try {
             Index idx = repo.createIndex();
             idx.load();
@@ -37,13 +37,12 @@ public record StatusCommand(Repository repo) implements Command {
 
             for (Map.Entry<String, ModifiedStatus> e : files.entrySet()) {
                 if (e.getValue() == ModifiedStatus.DELETED) {
-                    out.write(" D " + e.getKey());
+                    out.println(" D " + e.getKey());
                 } else if (e.getValue() == ModifiedStatus.UNSTAGED) {
-                    out.write("?? " + e.getKey());
+                    out.println("?? " + e.getKey());
                 } else if (e.getValue() == ModifiedStatus.MODIFIED) {
-                    out.write(" M " + e.getKey());
+                    out.println(" M " + e.getKey());
                 }
-                out.newLine();
             }
             out.flush();
         } catch (IOException e) {

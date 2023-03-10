@@ -1,23 +1,16 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.IO;
-import lemke.christof.lit.Lit;
-import lemke.christof.lit.Repository;
-import org.junit.jupiter.api.BeforeEach;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
 public class BaseTest {
     protected Repository repo;
     protected Lit lit;
-    StringWriter out = new StringWriter();;
-    StringWriter err = new StringWriter();;
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    ByteArrayOutputStream err = new ByteArrayOutputStream();
     Map<String,String> envMap = new HashMap<>();
     {
         envMap.put("GIT_AUTHOR_NAME", "Christof Lemke");
@@ -41,13 +34,13 @@ public class BaseTest {
             }
 
             @Override
-            public BufferedWriter out() {
-                return new BufferedWriter(out);
+            public PrintStream out() {
+                return new PrintStream(out);
             }
 
             @Override
-            public BufferedWriter err() {
-                return new BufferedWriter(err);
+            public PrintStream err() {
+                return new PrintStream(err);
             }
         };
         repo = new Repository(r.ws(), r.db(), r.refs(), key -> envMap.get(key), io);

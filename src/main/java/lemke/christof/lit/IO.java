@@ -5,9 +5,9 @@ import java.io.*;
 public interface IO {
     InputStream in();
 
-    BufferedWriter out();
+    PrintStream out();
 
-    BufferedWriter err();
+    PrintStream err();
 
     public static IO createDefault() {
         return new IO() {
@@ -17,13 +17,13 @@ public interface IO {
             }
 
             @Override
-            public BufferedWriter out() {
-                return new BufferedWriter(new OutputStreamWriter(System.out));
+            public PrintStream out() {
+                return System.out;
             }
 
             @Override
-            public BufferedWriter err() {
-                return new BufferedWriter(new OutputStreamWriter(System.err));
+            public PrintStream err() {
+                return System.err;
             }
         };
     }

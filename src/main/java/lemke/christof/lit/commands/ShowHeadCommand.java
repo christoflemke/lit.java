@@ -12,7 +12,7 @@ public record ShowHeadCommand(Repository repo) implements Command {
     public void run(String[] args) {
         Database db = repo.db();
         Commit commit = (Commit) db.read(repo.refs().readHead());
-        System.out.println("commit " + commit.oid());
+        repo.io().out().println("commit " + commit.oid());
         Tree tree = (Tree) db.read(commit.treeOid());
         printTree(db, tree, 2);
     }
@@ -25,8 +25,8 @@ public record ShowHeadCommand(Repository repo) implements Command {
         return result;
     }
 
-    private static void printTree(Database db, DbObject object, int pad) {
-        System.out.println(ident(pad) + object.toString());
+    private void printTree(Database db, DbObject object, int pad) {
+        repo.io().out().println(ident(pad) + object.toString());
         if (object instanceof Tree) {
             Tree tree = (Tree) object;
             for (Entry e : tree.entries()) {

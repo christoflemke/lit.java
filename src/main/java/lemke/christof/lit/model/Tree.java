@@ -48,6 +48,7 @@ public record Tree (List<Entry> entries) implements DbObject {
         buffer.position(start);
         byte[] bytes = new byte[stop - start];
         buffer.get(bytes);
+        buffer.get();
         return bytes;
     }
 
@@ -57,7 +58,6 @@ public record Tree (List<Entry> entries) implements DbObject {
         while (buff.hasRemaining()) {
             byte[] mode = readUntil(buff, ' ');
             byte[] path = readUntil(buff, '\0');
-            buff.get();
             byte[] oid = new byte[20];
             buff.get(oid);
             String modeString = new String(mode);

@@ -19,25 +19,19 @@ public class Main {
     }
 
     private static Command createCommand(String command, Repository repo) {
-        switch (command) {
-            case "commit":
-                return new CommitCommand(repo);
-            case "init":
-                return new InitCommand();
-            case "test":
-                return new TestCommand();
-            case "add":
-                return new AddCommand(repo);
-            case "status":
-                return new StatusCommand(repo);
-            case "show_head":
-                return new ShowHeadCommand(repo);
-            case "list_head":
-                return new ListHeadCommand(repo);
-            default:
+        return switch (command) {
+            case "commit" -> new CommitCommand(repo);
+            case "init" -> new InitCommand();
+            case "test" -> new TestCommand();
+            case "add" -> new AddCommand(repo);
+            case "status" -> new StatusCommand(repo);
+            case "show_head" -> new ShowHeadCommand(repo);
+            case "list_head" -> new ListHeadCommand(repo);
+            default -> {
                 System.err.println("Unknown command: " + command);
                 System.exit(1);
-                return null;
-        }
+                yield null;
+            }
+        };
     }
 }

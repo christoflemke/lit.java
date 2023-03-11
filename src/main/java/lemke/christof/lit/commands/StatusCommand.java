@@ -2,7 +2,7 @@ package lemke.christof.lit.commands;
 
 import lemke.christof.lit.Index;
 import lemke.christof.lit.Repository;
-import lemke.christof.lit.model.FileStat;
+import lemke.christof.lit.model.*;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -15,7 +15,7 @@ import java.util.*;
 public record StatusCommand(Repository repo) implements Command {
 
     private enum ModifiedStatus {
-        STAGED, UNSTAGED, MODIFIED, DELETED, MIXED
+        STAGED, UNSTAGED, MODIFIED, DELETED, ADDED, MIXED
     }
 
     @Override
@@ -28,26 +28,57 @@ public record StatusCommand(Repository repo) implements Command {
             Map<String, ModifiedStatus> files = new TreeMap<>();
             repo.ws().walkFileTree(new ModificationVisitor(idx, files));
 
+            Map<Path, DbObject> headTree = loadHeadTree();
+
             for(Index.Entry entry : idx.entries()) {
                 Path path = entry.path();
                 if(!repo.ws().resolve(path).toFile().exists()) {
                     files.put(path.toString(), ModifiedStatus.DELETED);
                 }
+                if (!headTree.containsKey(path)) {
+                    files.put(path.toString(), ModifiedStatus.ADDED);
+                }
             }
 
             for (Map.Entry<String, ModifiedStatus> e : files.entrySet()) {
-                if (e.getValue() == ModifiedStatus.DELETED) {
-                    out.println(" D " + e.getKey());
-                } else if (e.getValue() == ModifiedStatus.UNSTAGED) {
-                    out.println("?? " + e.getKey());
-                } else if (e.getValue() == ModifiedStatus.MODIFIED) {
-                    out.println(" M " + e.getKey());
+                final String key = e.getKey();
+                switch (e.getValue()) {
+                    case DELETED -> out.println(" D " + key);
+                    case UNSTAGED -> out.println("?? " + key);
+                    case MODIFIED -> out.println(" M " + key);
+                    case ADDED -> out.println(" A " + key);
+                    default -> new RuntimeException("Unknown status: "+e.getValue()+" for "+key);
                 }
             }
+
             out.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Map<Path, DbObject> loadHeadTree() {
+        String head = this.repo.refs().readHead();
+        if (head == null) {
+            return Map.of();
+        }
+
+        Commit commit = (Commit) repo.db().read(head);
+        return readTree(commit.treeOid(), Path.of(""));
+    }
+
+    private Map<Path, DbObject> readTree(String oid, Path path) {
+        DbObject o = repo.db().read(oid);
+        if (o instanceof Blob) {
+            return Map.of(path, o);
+        }
+        Tree tree = (Tree) o;
+        Map<Path, DbObject> result = new HashMap<>();
+        for(Entry e : tree.entries()) {
+            Path entryPath = path.resolve(e.relativePath());
+            result.putAll(readTree(e.oid(), entryPath));
+        }
+        return result;
     }
 
     private class ModificationVisitor extends SimpleFileVisitor<Path> {

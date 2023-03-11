@@ -49,16 +49,12 @@ public record Database(Path root) {
                 length += c;
             }
             byte[] data = Arrays.copyOfRange(bytes, buffer.position(), buffer.limit());
-            switch (type) {
-                case "blob":
-                    return new Blob(data);
-                case "commit":
-                    return Commit.fromBytes(data);
-                case "tree":
-                    return Tree.fromBytes(data);
-                default:
-                    throw new RuntimeException("Unknown type: "+type);
-            }
+            return switch (type) {
+                case "blob" -> new Blob(data);
+                case "commit" -> Commit.fromBytes(data);
+                case "tree" -> Tree.fromBytes(data);
+                default -> throw new RuntimeException("Unknown type: "+type);
+            };
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

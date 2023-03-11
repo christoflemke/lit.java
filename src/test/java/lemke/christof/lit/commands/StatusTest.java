@@ -154,5 +154,30 @@ public class StatusTest extends BaseTest {
                               D a/b/3.txt
                              """, output());
         }
+
+
+        @Test
+        public void itReportsAFileAddedToATrackedDirectory() {
+            write("a/4.txt", "four");
+            lit.add(".");
+
+            lit.status();
+
+            assertEquals("""
+                              A a/4.txt
+                             """, output());
+        }
+
+        @Test
+        public void itReportsAFileAddedToAnUntrackedDirectory() {
+            write("d/e/5.txt", "five");
+            lit.add(".");
+
+            lit.status();
+
+            assertEquals("""
+                              A d/e/5.txt
+                             """, output());
+        }
     }
 }

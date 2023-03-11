@@ -13,41 +13,44 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.function.Function;
 
-public record StatusCommand(Repository repo) implements Command {
+public class StatusCommand implements Command {
 
     private enum ModifiedStatus {
-        STAGED, UNTRACKED, WORKSPACE_MODIFIED, WORKSPACE_DELETED, INDEX_ADDED, INDEX_MODIFIED, MIXED
+        STAGED, WORKSPACE_UNTRACKED, WORKSPACE_MODIFIED, WORKSPACE_DELETED, INDEX_ADDED, INDEX_MODIFIED, MIXED
+    }
+
+    private final Repository repo;
+    private final Index idx;
+    private final Map<String, EnumSet<ModifiedStatus>> changes = new TreeMap<>();
+
+    public StatusCommand(Repository repo) {
+        this.repo = repo;
+        idx = repo.createIndex();
+        idx.load();
     }
 
     @Override
     public void run(String[] args) {
-        PrintStream out = repo.io().out();
-        try {
-            Index idx = repo.createIndex();
-            idx.load();
-
-            Map<String, EnumSet<ModifiedStatus>> files = new TreeMap<>();
-
-            repo.ws().walkFileTree(new ModificationVisitor(idx, files));
+        try (PrintStream out = repo.io().out()) {
+            repo.ws().walkFileTree(new ModificationVisitor());
 
             Map<Path, DbObject> headTree = loadHeadTree();
 
-            for(Index.Entry entry : idx.entries()) {
+            for (Index.Entry entry : idx.entries()) {
                 Path path = entry.path();
-                EnumSet<ModifiedStatus> statuses = files.computeIfAbsent(path.toString(), k -> EnumSet.noneOf(ModifiedStatus.class));
-                if(!repo.ws().resolve(path).toFile().exists()) {
-                    statuses.add(ModifiedStatus.WORKSPACE_DELETED);
+                if (!repo.ws().resolve(path).toFile().exists()) {
+                    addStatus(path.toString(), ModifiedStatus.WORKSPACE_DELETED);
                 }
                 if (headTree.containsKey(path)) {
                     DbObject dbObject = headTree.get(path);
                     System.out.println(dbObject);
                 } else {
-                    statuses.add(ModifiedStatus.INDEX_ADDED);
+                    addStatus(path.toString(), ModifiedStatus.INDEX_ADDED);
                 }
             }
 
             Function<String, String> statusFor = (String path) -> {
-                EnumSet<ModifiedStatus> statuses = files.get(path);
+                EnumSet<ModifiedStatus> statuses = changes.get(path);
                 String left = " ";
                 if (statuses.contains(ModifiedStatus.INDEX_ADDED)) left = "A";
                 if (statuses.contains(ModifiedStatus.INDEX_MODIFIED)) left = "M";
@@ -55,13 +58,16 @@ public record StatusCommand(Repository repo) implements Command {
                 String right = " ";
                 if (statuses.contains(ModifiedStatus.WORKSPACE_DELETED)) right = "D";
                 if (statuses.contains(ModifiedStatus.WORKSPACE_MODIFIED)) right = "M";
-                if (statuses.contains(ModifiedStatus.UNTRACKED)) {right = "?"; left = "?";}
+                if (statuses.contains(ModifiedStatus.WORKSPACE_UNTRACKED)) {
+                    right = "?";
+                    left = "?";
+                }
                 return left + right;
             };
-            for (Map.Entry<String, EnumSet<ModifiedStatus>> e : files.entrySet()) {
+            for (Map.Entry<String, EnumSet<ModifiedStatus>> e : changes.entrySet()) {
                 final String key = e.getKey();
                 if (statusFor.apply(key).isBlank()) continue;
-                out.println(statusFor.apply(key)+" "+key);
+                out.println(statusFor.apply(key) + " " + key);
             }
 
             out.flush();
@@ -70,40 +76,25 @@ public record StatusCommand(Repository repo) implements Command {
         }
     }
 
+    private void addStatus(String path, ModifiedStatus status) {
+        EnumSet<ModifiedStatus> statuses = changes.computeIfAbsent(
+            path,
+            k -> EnumSet.noneOf(ModifiedStatus.class)
+        );
+        statuses.add(status);
+    }
+
     private Map<Path, DbObject> loadHeadTree() {
         String head = this.repo.refs().readHead();
         if (head == null) {
             return Map.of();
         }
-
         Commit commit = (Commit) repo.db().read(head);
-        return readTree(commit.treeOid(), Path.of(""));
-    }
-
-    private Map<Path, DbObject> readTree(String oid, Path path) {
-        DbObject o = repo.db().read(oid);
-        if (o instanceof Blob) {
-            return Map.of(path, o);
-        }
-        Tree tree = (Tree) o;
-        Map<Path, DbObject> result = new HashMap<>();
-        for(Entry e : tree.entries()) {
-            Path entryPath = path.resolve(e.relativePath());
-            result.putAll(readTree(e.oid(), entryPath));
-        }
-        return result;
+        return repo.db().readTree(commit.treeOid(), Path.of(""));
     }
 
     private class ModificationVisitor extends SimpleFileVisitor<Path> {
-        private final Index idx;
-        private final Map<String, EnumSet<ModifiedStatus>> files;
-        Stack<Map<Path, ModifiedStatus>> stack;
-
-        public ModificationVisitor(Index idx, Map<String, EnumSet<ModifiedStatus>> files) {
-            this.idx = idx;
-            this.files = files;
-            stack = new Stack<>();
-        }
+        Stack<Map<Path, ModifiedStatus>> stack = new Stack<>();
 
         private void put(Path path, ModifiedStatus status) {
             stack.peek().put(path, status);
@@ -116,16 +107,16 @@ public record StatusCommand(Repository repo) implements Command {
                 if (currentStat.equals(idxEntry.get().stat())) {
                     return ModifiedStatus.STAGED;
                 } else {
-                    if(idxEntry.get().stat().mode() != currentStat.mode()) {
+                    if (idxEntry.get().stat().mode() != currentStat.mode()) {
                         return ModifiedStatus.WORKSPACE_MODIFIED;
-                    } else if(idxEntry.get().oid().equals(idx.hash(relativePath))) {
+                    } else if (idxEntry.get().oid().equals(idx.hash(relativePath))) {
                         return ModifiedStatus.STAGED;
                     } else {
                         return ModifiedStatus.WORKSPACE_MODIFIED;
                     }
                 }
             } else {
-                return ModifiedStatus.UNTRACKED;
+                return ModifiedStatus.WORKSPACE_UNTRACKED;
             }
         }
 
@@ -145,14 +136,13 @@ public record StatusCommand(Repository repo) implements Command {
             return FileVisitResult.CONTINUE;
         }
 
-        private void addUnstaged(Map<Path, ModifiedStatus> children) {
-            EnumSet<ModifiedStatus> reported = EnumSet.of(ModifiedStatus.UNTRACKED, ModifiedStatus.WORKSPACE_MODIFIED);
+        private void addChanged(Map<Path, ModifiedStatus> children) {
+            EnumSet<ModifiedStatus> reported = EnumSet.of(ModifiedStatus.WORKSPACE_UNTRACKED, ModifiedStatus.WORKSPACE_MODIFIED);
             children.entrySet().stream()
                 .filter(e -> reported.contains(e.getValue()))
                 .forEach(e -> {
                     String path = repo.ws().isDirectory(e.getKey()) ? e.getKey() + "/" : e.getKey().toString();
-                    EnumSet<ModifiedStatus> statuses = files.computeIfAbsent(path, k -> EnumSet.noneOf(ModifiedStatus.class));
-                    statuses.add(e.getValue());
+                    addStatus(path, e.getValue());
                 });
         }
 
@@ -161,15 +151,15 @@ public record StatusCommand(Repository repo) implements Command {
             Path relativePath = repo.ws().toRelativePath(dir);
             Map<Path, ModifiedStatus> children = stack.pop();
             if (stack.isEmpty()) {
-                addUnstaged(children);
+                addChanged(children);
                 return FileVisitResult.CONTINUE;
             }
             if (children.values().stream().allMatch(s -> s == ModifiedStatus.STAGED)) {
                 stack.peek().put(relativePath, ModifiedStatus.STAGED);
-            } else if (children.values().stream().allMatch(s -> s == ModifiedStatus.UNTRACKED)) {
-                stack.peek().put(relativePath, ModifiedStatus.UNTRACKED);
+            } else if (children.values().stream().allMatch(s -> s == ModifiedStatus.WORKSPACE_UNTRACKED)) {
+                stack.peek().put(relativePath, ModifiedStatus.WORKSPACE_UNTRACKED);
             } else {
-                addUnstaged(children);
+                addChanged(children);
                 stack.peek().put(relativePath, ModifiedStatus.MIXED);
             }
             return FileVisitResult.CONTINUE;

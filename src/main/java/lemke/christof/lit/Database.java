@@ -1,9 +1,6 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.model.Blob;
-import lemke.christof.lit.model.Commit;
-import lemke.christof.lit.model.DbObject;
-import lemke.christof.lit.model.Tree;
+import lemke.christof.lit.model.*;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -13,6 +10,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
@@ -63,5 +62,19 @@ public record Database(Path root) {
     private Path objectPath(String oid) {
         Path dirPath = objectsPath().resolve(oid.substring(0, 2));
         return dirPath.resolve(oid.substring(2));
+    }
+
+    public Map<Path, DbObject> readTree(String oid, Path path) {
+        DbObject o = read(oid);
+        if (o instanceof Blob) {
+            return Map.of(path, o);
+        }
+        Tree tree = (Tree) o;
+        Map<Path, DbObject> result = new HashMap<>();
+        for (Entry e : tree.entries()) {
+            Path entryPath = path.resolve(e.relativePath());
+            result.putAll(readTree(e.oid(), entryPath));
+        }
+        return result;
     }
 }

@@ -164,7 +164,7 @@ public class StatusTest extends BaseTest {
             lit.status();
 
             assertEquals("""
-                              A a/4.txt
+                             A  a/4.txt
                              """, output());
         }
 
@@ -176,7 +176,7 @@ public class StatusTest extends BaseTest {
             lit.status();
 
             assertEquals("""
-                              A d/e/5.txt
+                             A  d/e/5.txt
                              """, output());
         }
     }

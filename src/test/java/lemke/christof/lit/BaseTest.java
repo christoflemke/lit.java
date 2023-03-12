@@ -100,4 +100,8 @@ public class BaseTest {
     protected String output() {
         return out.toString();
     }
+
+    protected void resetOutput() {
+        out.reset();
+    }
 }

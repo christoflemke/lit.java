@@ -2,6 +2,7 @@ package lemke.christof.lit.commands;
 
 import lemke.christof.lit.Index;
 import lemke.christof.lit.Repository;
+import lemke.christof.lit.Util;
 import lemke.christof.lit.model.*;
 
 import java.io.IOException;
@@ -15,26 +16,27 @@ import java.util.*;
 public class StatusCommand implements Command {
 
     private enum ModifiedStatus {
-        STAGED("S"),
-        WORKSPACE_UNTRACKED("?"),
-        WORKSPACE_MODIFIED("M"),
-        WORKSPACE_DELETED("D"),
-        INDEX_ADDED("A"),
-        INDEX_MODIFIED("M"),
-        MIXED("_"),
-        NO_STATUS(" ");
+        STAGED("S", " "),
+        UNTRACKED("?", " "),
+        WORKSPACE_MODIFIED("M", "modified:"),
+        WORKSPACE_DELETED("D", "deleted:"),
+        INDEX_ADDED("A", "new file"),
+        INDEX_MODIFIED("M", "modified:"),
+        MIXED("_", "_"),
+        NO_STATUS(" ", " ");
 
         final String shortStatus;
+        final String longStatus;
 
-        ModifiedStatus(String shortStatus) {
+        ModifiedStatus(String shortStatus, String longStatus) {
             this.shortStatus = shortStatus;
+            this.longStatus = longStatus;
         }
     }
 
     private EnumSet<ModifiedStatus> workspaceStatuses = EnumSet.of(
         ModifiedStatus.WORKSPACE_MODIFIED,
-        ModifiedStatus.WORKSPACE_DELETED,
-        ModifiedStatus.WORKSPACE_UNTRACKED
+        ModifiedStatus.WORKSPACE_DELETED
     );
     private EnumSet<ModifiedStatus> indexStatuses = EnumSet.of(
         ModifiedStatus.INDEX_ADDED,
@@ -55,31 +57,76 @@ public class StatusCommand implements Command {
 
     @Override
     public void run(String[] args) {
-        try (PrintStream out = repo.io().out()) {
+        try {
             repo.ws().walkFileTree(new ModificationVisitor());
             computeChangesFromIndex();
 
             if (args.length > 0 && args[0].equals("--porcelain")) {
                 printPorcelain();
             } else {
-                printLong();
+                new LongStatus().printLong();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void printLong() {
+    class LongStatus {
+        private void printLong() {
+            print_changes("Changes to be committed", indexChanges);
+            print_changes("Changes not staged for commit", workspaceChanges);
+            print_changes("Untracked files", untrackedFiles);
+            print_commit_status();
+        }
 
-    }
-
-    private void printPorcelain() {
-        try (PrintStream out = repo.io().out()) {
-            for (var path : changed) {
-                String left = indexChanges.getOrDefault(path, ModifiedStatus.NO_STATUS).shortStatus;
-                String right = workspaceChanges.getOrDefault(path, ModifiedStatus.NO_STATUS).shortStatus;
-                out.println(left+right+" "+path);
+        private void print_commit_status() {
+            if(!indexChanges.isEmpty()) {
+                return;
             }
+
+            PrintStream out = repo.io().out();
+            if (!workspaceChanges.isEmpty()) {
+                out.println("no changes added to commit");
+            } else if(!untrackedFiles.isEmpty()) {
+                out.println("nothing added to commit but untracked files present");
+            } else {
+                out.println("nothing to commit, working tree clean");
+            }
+        }
+
+        private void print_changes(String message, SortedMap<String, ModifiedStatus> changes) {
+            if(changes.isEmpty()) {
+                return;
+            }
+            PrintStream out = repo.io().out();
+            out.println(message+":");
+            int labelWidth = 12;
+            for (var change : changes.entrySet()) {
+                String status = Util.rightPad(change.getValue().longStatus, labelWidth);
+                out.println("\t"+status+change.getKey());
+            }
+        }
+
+        private void print_changes(String message, SortedSet<String> changes) {
+            if(changes.isEmpty()) {
+                return;
+            }
+            PrintStream out = repo.io().out();
+            out.println(message+":");
+            for (var change : changes) {
+                out.println("\t"+change);
+            }
+        }
+    }
+    private void printPorcelain() {
+        for (var path : changed) {
+            if (untrackedFiles.contains(path)) {
+                repo.io().out().println("?? " + path);
+                continue;
+            }
+            String left = indexChanges.getOrDefault(path, ModifiedStatus.NO_STATUS).shortStatus;
+            String right = workspaceChanges.getOrDefault(path, ModifiedStatus.NO_STATUS).shortStatus;
+            repo.io().out().println(left + right + " " + path);
         }
     }
 
@@ -106,13 +153,10 @@ public class StatusCommand implements Command {
             workspaceChanges.put(path, status);
         } else if (indexStatuses.contains(status)) {
             indexChanges.put(path, status);
-        } else {
-            throw new RuntimeException("Unknown status: " + status + " for " + path);
         }
 
-        if (ModifiedStatus.WORKSPACE_UNTRACKED == status) {
+        if (ModifiedStatus.UNTRACKED == status) {
             untrackedFiles.add(path);
-            indexChanges.put(path, ModifiedStatus.WORKSPACE_UNTRACKED);
         }
     }
 
@@ -148,7 +192,7 @@ public class StatusCommand implements Command {
                     }
                 }
             } else {
-                return ModifiedStatus.WORKSPACE_UNTRACKED;
+                return ModifiedStatus.UNTRACKED;
             }
         }
 
@@ -169,7 +213,7 @@ public class StatusCommand implements Command {
         }
 
         private void addChanged(Map<Path, ModifiedStatus> children) {
-            EnumSet<ModifiedStatus> reported = EnumSet.of(ModifiedStatus.WORKSPACE_UNTRACKED, ModifiedStatus.WORKSPACE_MODIFIED);
+            EnumSet<ModifiedStatus> reported = EnumSet.of(ModifiedStatus.UNTRACKED, ModifiedStatus.WORKSPACE_MODIFIED);
             children.entrySet().stream()
                 .filter(e -> reported.contains(e.getValue()))
                 .forEach(e -> {
@@ -188,8 +232,8 @@ public class StatusCommand implements Command {
             }
             if (children.values().stream().allMatch(s -> s == ModifiedStatus.STAGED)) {
                 stack.peek().put(relativePath, ModifiedStatus.STAGED);
-            } else if (children.values().stream().allMatch(s -> s == ModifiedStatus.WORKSPACE_UNTRACKED)) {
-                stack.peek().put(relativePath, ModifiedStatus.WORKSPACE_UNTRACKED);
+            } else if (children.values().stream().allMatch(s -> s == ModifiedStatus.UNTRACKED)) {
+                stack.peek().put(relativePath, ModifiedStatus.UNTRACKED);
             } else {
                 addChanged(children);
                 stack.peek().put(relativePath, ModifiedStatus.MIXED);

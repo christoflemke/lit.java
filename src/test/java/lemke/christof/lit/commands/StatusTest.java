@@ -18,6 +18,15 @@ public class StatusTest extends BaseTest {
                          ?? another.txt
                          ?? file.txt
                          """, output());
+
+        resetOutput();
+        lit.statusLong();
+        assertEquals("""
+                    Untracked files:
+                    \tanother.txt
+                    \tfile.txt
+                    nothing added to commit but untracked files present
+                    """, output());
     }
 
     @Test

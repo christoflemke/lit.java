@@ -28,4 +28,8 @@ public class Lit {
     public void statusPorcelain() {
         new StatusCommand(repo).run(new String[] {"--porcelain"});
     }
+
+    public void statusLong() {
+        new StatusCommand(repo).run(new String[] {});
+    }
 }

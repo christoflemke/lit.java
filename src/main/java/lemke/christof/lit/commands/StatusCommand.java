@@ -11,17 +11,41 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.function.Function;
 
 public class StatusCommand implements Command {
 
     private enum ModifiedStatus {
-        STAGED, WORKSPACE_UNTRACKED, WORKSPACE_MODIFIED, WORKSPACE_DELETED, INDEX_ADDED, INDEX_MODIFIED, MIXED
+        STAGED("S"),
+        WORKSPACE_UNTRACKED("?"),
+        WORKSPACE_MODIFIED("M"),
+        WORKSPACE_DELETED("D"),
+        INDEX_ADDED("A"),
+        INDEX_MODIFIED("M"),
+        MIXED("_"),
+        NO_STATUS(" ");
+
+        final String shortStatus;
+
+        ModifiedStatus(String shortStatus) {
+            this.shortStatus = shortStatus;
+        }
     }
 
+    private EnumSet<ModifiedStatus> workspaceStatuses = EnumSet.of(
+        ModifiedStatus.WORKSPACE_MODIFIED,
+        ModifiedStatus.WORKSPACE_DELETED,
+        ModifiedStatus.WORKSPACE_UNTRACKED
+    );
+    private EnumSet<ModifiedStatus> indexStatuses = EnumSet.of(
+        ModifiedStatus.INDEX_ADDED,
+        ModifiedStatus.INDEX_MODIFIED
+    );
     private final Repository repo;
     private final Index idx;
-    private final Map<String, EnumSet<ModifiedStatus>> changes = new TreeMap<>();
+    private final SortedSet<String> changed = new TreeSet<>();
+    private final SortedMap<String, ModifiedStatus> indexChanges = new TreeMap<>();
+    private final SortedMap<String, ModifiedStatus> workspaceChanges = new TreeMap<>();
+    private final SortedSet<String> untrackedFiles = new TreeSet<>();
 
     public StatusCommand(Repository repo) {
         this.repo = repo;
@@ -33,55 +57,63 @@ public class StatusCommand implements Command {
     public void run(String[] args) {
         try (PrintStream out = repo.io().out()) {
             repo.ws().walkFileTree(new ModificationVisitor());
+            computeChangesFromIndex();
 
-            Map<Path, DbObject> headTree = loadHeadTree();
-
-            for (Index.Entry entry : idx.entries()) {
-                Path path = entry.path();
-                if (!repo.ws().resolve(path).toFile().exists()) {
-                    addStatus(path.toString(), ModifiedStatus.WORKSPACE_DELETED);
-                }
-                if (headTree.containsKey(path)) {
-                    DbObject dbObject = headTree.get(path);
-                    System.out.println(dbObject);
-                } else {
-                    addStatus(path.toString(), ModifiedStatus.INDEX_ADDED);
-                }
+            if (args.length > 0 && args[0].equals("--porcelain")) {
+                printPorcelain();
+            } else {
+                printLong();
             }
-
-            Function<String, String> statusFor = (String path) -> {
-                EnumSet<ModifiedStatus> statuses = changes.get(path);
-                String left = " ";
-                if (statuses.contains(ModifiedStatus.INDEX_ADDED)) left = "A";
-                if (statuses.contains(ModifiedStatus.INDEX_MODIFIED)) left = "M";
-
-                String right = " ";
-                if (statuses.contains(ModifiedStatus.WORKSPACE_DELETED)) right = "D";
-                if (statuses.contains(ModifiedStatus.WORKSPACE_MODIFIED)) right = "M";
-                if (statuses.contains(ModifiedStatus.WORKSPACE_UNTRACKED)) {
-                    right = "?";
-                    left = "?";
-                }
-                return left + right;
-            };
-            for (Map.Entry<String, EnumSet<ModifiedStatus>> e : changes.entrySet()) {
-                final String key = e.getKey();
-                if (statusFor.apply(key).isBlank()) continue;
-                out.println(statusFor.apply(key) + " " + key);
-            }
-
-            out.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private void printLong() {
+
+    }
+
+    private void printPorcelain() {
+        try (PrintStream out = repo.io().out()) {
+            for (var path : changed) {
+                String left = indexChanges.getOrDefault(path, ModifiedStatus.NO_STATUS).shortStatus;
+                String right = workspaceChanges.getOrDefault(path, ModifiedStatus.NO_STATUS).shortStatus;
+                out.println(left+right+" "+path);
+            }
+        }
+    }
+
+    private void computeChangesFromIndex() {
+        Map<Path, DbObject> headTree = loadHeadTree();
+
+        for (Index.Entry entry : idx.entries()) {
+            Path path = entry.path();
+            if (!repo.ws().resolve(path).toFile().exists()) {
+                addStatus(path.toString(), ModifiedStatus.WORKSPACE_DELETED);
+            }
+            if (headTree.containsKey(path)) {
+                DbObject dbObject = headTree.get(path);
+                System.out.println(dbObject);
+            } else {
+                addStatus(path.toString(), ModifiedStatus.INDEX_ADDED);
+            }
+        }
+    }
+
     private void addStatus(String path, ModifiedStatus status) {
-        EnumSet<ModifiedStatus> statuses = changes.computeIfAbsent(
-            path,
-            k -> EnumSet.noneOf(ModifiedStatus.class)
-        );
-        statuses.add(status);
+        changed.add(path);
+        if (workspaceStatuses.contains(status)) {
+            workspaceChanges.put(path, status);
+        } else if (indexStatuses.contains(status)) {
+            indexChanges.put(path, status);
+        } else {
+            throw new RuntimeException("Unknown status: " + status + " for " + path);
+        }
+
+        if (ModifiedStatus.WORKSPACE_UNTRACKED == status) {
+            untrackedFiles.add(path);
+            indexChanges.put(path, ModifiedStatus.WORKSPACE_UNTRACKED);
+        }
     }
 
     private Map<Path, DbObject> loadHeadTree() {

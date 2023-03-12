@@ -5,8 +5,6 @@ import lemke.christof.lit.commands.CommitCommand;
 import lemke.christof.lit.commands.InitCommand;
 import lemke.christof.lit.commands.StatusCommand;
 
-import java.nio.file.Path;
-
 public class Lit {
     public static final String[] NO_ARGS = {};
     private final Repository repo;
@@ -27,7 +25,7 @@ public class Lit {
         new InitCommand().run(args);
     }
 
-    public void status() {
-        new StatusCommand(repo).run(NO_ARGS);
+    public void statusPorcelain() {
+        new StatusCommand(repo).run(new String[] {"--porcelain"});
     }
 }

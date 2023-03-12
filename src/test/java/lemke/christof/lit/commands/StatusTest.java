@@ -13,7 +13,7 @@ public class StatusTest extends BaseTest {
         write("file.txt");
         write("another.txt");
 
-        lit.status();
+        lit.statusPorcelain();
         assertEquals("""
                          ?? another.txt
                          ?? file.txt
@@ -26,7 +26,7 @@ public class StatusTest extends BaseTest {
         lit.add("committed.txt");
         lit.commit();
 
-        lit.status();
+        lit.statusPorcelain();
         assertEquals("", output());
     }
 
@@ -38,7 +38,7 @@ public class StatusTest extends BaseTest {
 
         write("uncommitted.txt");
 
-        lit.status();
+        lit.statusPorcelain();
         assertEquals("""
                          ?? uncommitted.txt
                          """, output());
@@ -49,7 +49,7 @@ public class StatusTest extends BaseTest {
         write("file.txt");
         write("dir/another.txt");
 
-        lit.status();
+        lit.statusPorcelain();
         assertEquals("""
                          ?? dir/
                          ?? file.txt
@@ -65,7 +65,7 @@ public class StatusTest extends BaseTest {
         write("a/outer.txt");
         write("a/b/c/file.txt");
 
-        lit.status();
+        lit.statusPorcelain();
         assertEquals("""
                          ?? a/b/c/
                          ?? a/outer.txt
@@ -85,7 +85,7 @@ public class StatusTest extends BaseTest {
 
         @Test
         public void printsNothingIfNoFilesAreChanged() {
-            lit.status();
+            lit.statusPorcelain();
             assertEquals("", output());
         }
 
@@ -94,7 +94,7 @@ public class StatusTest extends BaseTest {
             write("1.txt", "changed");
             write("a/2.txt", "modified");
 
-            lit.status();
+            lit.statusPorcelain();
             assertEquals("""
                               M 1.txt
                               M a/2.txt
@@ -105,7 +105,7 @@ public class StatusTest extends BaseTest {
         public void itReportsFilesThatChangedMode() {
             makeExecutable("a/2.txt");
 
-            lit.status();
+            lit.statusPorcelain();
 
             assertEquals("""
                               M a/2.txt
@@ -116,7 +116,7 @@ public class StatusTest extends BaseTest {
         public void itReportsFilesWithUnchangedSize() {
             write("a/b/3.txt", "hello");
 
-            lit.status();
+            lit.statusPorcelain();
 
             assertEquals("""
                               M a/b/3.txt
@@ -127,7 +127,7 @@ public class StatusTest extends BaseTest {
         public void itDoesNotReportFilesIfOnlyTheTimestampHasChanges() {
             touch("1.txt");
 
-            lit.status();
+            lit.statusPorcelain();
 
             assertEquals("", output());
         }
@@ -136,7 +136,7 @@ public class StatusTest extends BaseTest {
         public void itReportsDeletedFiles() {
             delete("a/2.txt");
 
-            lit.status();
+            lit.statusPorcelain();
 
             assertEquals("""
                               D a/2.txt
@@ -147,7 +147,7 @@ public class StatusTest extends BaseTest {
         public void itReportsFilesInDeletedDirectories() {
             delete("a");
 
-            lit.status();
+            lit.statusPorcelain();
 
             assertEquals("""
                               D a/2.txt
@@ -161,7 +161,7 @@ public class StatusTest extends BaseTest {
             write("a/4.txt", "four");
             lit.add(".");
 
-            lit.status();
+            lit.statusPorcelain();
 
             assertEquals("""
                              A  a/4.txt
@@ -173,7 +173,7 @@ public class StatusTest extends BaseTest {
             write("d/e/5.txt", "five");
             lit.add(".");
 
-            lit.status();
+            lit.statusPorcelain();
 
             assertEquals("""
                              A  d/e/5.txt

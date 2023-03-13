@@ -18,10 +18,10 @@ public class StatusCommand implements Command {
     private enum ModifiedStatus {
         STAGED("S", " "),
         UNTRACKED("?", " "),
-        WORKSPACE_MODIFIED("M", "modified:"),
-        WORKSPACE_DELETED("D", "deleted:"),
+        WORKSPACE_MODIFIED("M", "modified"),
+        WORKSPACE_DELETED("D", "deleted"),
         INDEX_ADDED("A", "new file"),
-        INDEX_MODIFIED("M", "modified:"),
+        INDEX_MODIFIED("M", "modified"),
         MIXED("_", "_"),
         NO_STATUS(" ", " ");
 
@@ -86,18 +86,33 @@ public class StatusCommand implements Command {
 
             String format(String in, boolean useColor) {
                 if (useColor) {
-                    return in;
-                } else {
                     return "\u001B[" + code + "m" + in + "\u001B[0m";
+                } else {
+                    return in;
                 }
             }
         }
 
         private void printLong() {
-            print_changes("Changes to be committed", indexChanges, Color.GREEN);
-            print_changes("Changes not staged for commit", workspaceChanges, Color.RED);
-            print_changes("Untracked files", untrackedFiles, Color.RED);
+            repo.io().out().println("On branch "+repo.refs().readHeadBranch());
+
+            String stagedMessage = """
+                                      Changes to be committed:
+                                        (use "git restore --staged <file>..." to unstage)""";
+            print_changes(stagedMessage, indexChanges, Color.GREEN);
+
+
+            String unstagedMessage = """
+                Changes not staged for commit:
+                  (use "git add/rm <file>..." to update what will be committed)
+                  (use "git restore <file>..." to discard changes in working directory)""";
+            print_changes(unstagedMessage, workspaceChanges, Color.RED);
+            String untrackedMessage = """
+                Untracked files:
+                  (use "git add <file>..." to include in what will be committed)""";
+            print_changes(untrackedMessage, untrackedFiles, Color.RED);
             print_commit_status();
+            repo.io().out().println("");
         }
 
         private void print_commit_status() {
@@ -120,12 +135,13 @@ public class StatusCommand implements Command {
                 return;
             }
             PrintStream out = repo.io().out();
-            out.println(message + ":");
+            out.println(message);
             int labelWidth = 12;
             for (var change : changes.entrySet()) {
-                String status = Util.rightPad(change.getValue().longStatus, labelWidth);
+                String status = Util.rightPad(change.getValue().longStatus+":", labelWidth);
                 out.println("\t" + color.format(status + change.getKey(), useColors));
             }
+            out.println("");
         }
 
         private void print_changes(String message, SortedSet<String> changes, Color color) {
@@ -133,7 +149,7 @@ public class StatusCommand implements Command {
                 return;
             }
             PrintStream out = repo.io().out();
-            out.println(message + ":");
+            out.println(message);
             for (var change : changes) {
                 out.println("\t" + color.format(change, useColors));
             }

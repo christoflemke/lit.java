@@ -1,8 +1,6 @@
 package lemke.christof.lit;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -25,6 +23,22 @@ public record Refs (Path root) {
             Files.move(tempFile, headPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public String readHeadBranch() {
+        String ref;
+        try {
+            ref = Files.readString(headPath());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        if (ref.startsWith("ref:")) {
+            String[] split = ref.split(" ");
+            String[] path = split[1].split("/");
+            return path[path.length - 1].trim();
+        } else {
+            return ref.trim();
         }
     }
 

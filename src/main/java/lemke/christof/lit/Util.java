@@ -11,9 +11,9 @@ public class Util {
 
     public static String rightPad(String s, int labelWidth) {
         if (s.length() <= labelWidth) {
-            return s;
-        } else {
             return s + pad(labelWidth - s.length());
+        } else {
+            return s;
         }
     }
 }

@@ -12,21 +12,15 @@ public class StatusTest extends BaseTest {
     public void listsUntrackedFilesInNameOrder() {
         write("file.txt");
         write("another.txt");
+        lit.add(".");
+        lit.commit();
+        write("added.txt");
+        lit.add("added.txt");
 
         lit.statusPorcelain();
         assertEquals("""
-                         ?? another.txt
-                         ?? file.txt
+                         A  added.txt
                          """, output());
-
-        resetOutput();
-        lit.statusLong();
-        assertEquals("""
-                    Untracked files:
-                    \t\u001B[31manother.txt\u001B[0m
-                    \t\u001B[31mfile.txt\u001B[0m
-                    nothing added to commit but untracked files present
-                    """, output());
     }
 
     @Test

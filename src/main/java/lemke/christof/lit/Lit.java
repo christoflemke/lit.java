@@ -26,10 +26,13 @@ public class Lit {
     }
 
     public void statusPorcelain() {
-        new StatusCommand(repo).run(new String[] {"--porcelain"});
+        new StatusCommand(repo, false).run(new String[] {"--porcelain"});
     }
 
     public void statusLong() {
-        new StatusCommand(repo).run(new String[] {});
+        new StatusCommand(repo, false).run(new String[] {});
+    }
+    public void statusLongColor() {
+        new StatusCommand(repo, true).run(new String[] {});
     }
 }

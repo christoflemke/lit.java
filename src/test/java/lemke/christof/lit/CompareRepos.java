@@ -5,7 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HexFormat;
@@ -18,10 +21,8 @@ public class CompareRepos {
 
     @BeforeAll
     public static void compare() throws Exception {
-        String path = CompareRepos.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        Path root = Path.of(path).getParent().getParent().getParent().getParent();
         ProcessBuilder processBuilder = new ProcessBuilder("./testdata/setup-test-data.sh");
-        processBuilder.directory(root.toFile());
+        processBuilder.directory(TestUtil.projectRoot().toFile());
         processBuilder.inheritIO();
         Process process = processBuilder.start();
         int exitCode = process.waitFor();
@@ -54,11 +55,38 @@ public class CompareRepos {
     }
 
     @Test
-    public void compareIndex() throws IOException {
-        Path actualPath = Path.of("testdata", "lit-index.hex");
-        Path referencePath = Path.of("testdata", "git-index.hex");
-        byte[] actualBytes = Files.readAllBytes(actualPath);
-        byte[] referenceBytes = Files.readAllBytes(referencePath);
-        assertEquals(HexFormat.of().formatHex(referenceBytes), HexFormat.of().formatHex(actualBytes));
+    public void comparePorcelainOutput() throws Exception {
+        ProcessBuilder processBuilder = new ProcessBuilder("git","status","--porcelain");
+        Path repoPath = TestUtil.projectRoot().resolve("testdata").resolve("status-repo");
+        processBuilder.directory(repoPath.toFile());
+        Process process = processBuilder.start();
+        int exitCode = process.waitFor();
+        String gitOutput = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        assertEquals(0, exitCode);
+
+        var out = new ByteArrayOutputStream();
+        IO io = IO.createDefault().withOut(new PrintStream(out));
+        Lit lit = new Lit(Repository.create(repoPath).withIO(io));
+        lit.statusPorcelain();
+
+        assertEquals(gitOutput, new String(out.toByteArray()));
+    }
+
+    @Test
+    public void compareLongOutput() throws Exception {
+        ProcessBuilder processBuilder = new ProcessBuilder("git","status");
+        Path repoPath = TestUtil.projectRoot().resolve("testdata").resolve("status-repo");
+        processBuilder.directory(repoPath.toFile());
+        Process process = processBuilder.start();
+        int exitCode = process.waitFor();
+        String gitOutput = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        assertEquals(0, exitCode);
+
+        var out = new ByteArrayOutputStream();
+        IO io = IO.createDefault().withOut(new PrintStream(out));
+        Lit lit = new Lit(Repository.create(repoPath).withIO(io));
+        lit.statusLong();
+
+        assertEquals(gitOutput, new String(out.toByteArray()));
     }
 }

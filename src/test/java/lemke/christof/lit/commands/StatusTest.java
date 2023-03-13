@@ -23,8 +23,8 @@ public class StatusTest extends BaseTest {
         lit.statusLong();
         assertEquals("""
                     Untracked files:
-                    \tanother.txt
-                    \tfile.txt
+                    \t\u001B[31manother.txt\u001B[0m
+                    \t\u001B[31mfile.txt\u001B[0m
                     nothing added to commit but untracked files present
                     """, output());
     }

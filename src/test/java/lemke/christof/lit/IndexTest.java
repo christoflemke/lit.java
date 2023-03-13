@@ -6,7 +6,21 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-public class IndexTest {
+public class IndexTest extends BaseTest {
+
+    @Test
+    public void minimalIndex() {
+        write("test");
+        Index index = repo.createIndex();
+        index.add(Path.of("test"));
+        index.commit();
+
+        Index loaded = repo.createIndex();
+        loaded.load();
+
+        assertEquals(1, loaded.entries().size());
+    }
+
     @Test
     public void testIndex() throws IOException {
         Path root = Files.createTempDirectory("test-");

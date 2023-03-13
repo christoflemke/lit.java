@@ -24,7 +24,7 @@ public class Main {
             case "init" -> new InitCommand();
             case "test" -> new TestCommand();
             case "add" -> new AddCommand(repo);
-            case "status" -> new StatusCommand(repo);
+            case "status" -> new StatusCommand(repo, System.console() != null);
             case "show_head" -> new ShowHeadCommand(repo);
             case "list_head" -> new ListHeadCommand(repo);
             default -> {

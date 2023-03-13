@@ -8,6 +8,10 @@ export GIT_AUTHOR_NAME="Christof Lemke"
 export GIT_COMMITTER_NAME="Christof Lemke"
 export GIT_AUTHOR_EMAIL="doesnotexist@gmail.com"
 
+lit() {
+  java -jar $REPO_ROOT/build/libs/lit.java-1.0-SNAPSHOT.jar "${@}"
+}
+
 (cd $REPO_ROOT && ./gradlew jar)
 
 (
@@ -33,10 +37,6 @@ export GIT_AUTHOR_EMAIL="doesnotexist@gmail.com"
   git commit -m 'second commit'
 )
 
-lit() {
-  java -jar $REPO_ROOT/build/libs/lit.java-1.0-SNAPSHOT.jar "${@}"
-}
-
 (
   set -e
 
@@ -59,6 +59,7 @@ lit() {
   echo 'second commit' | lit commit
 )
 
+# index test
 (
   set -e
   REF_REPO_PATH=index-repo
@@ -69,12 +70,36 @@ lit() {
   echo '123' > dir/aindex.test
   echo '456' > dir/bindex.test
   echo '789' > cindex.test
-  lit add cindex.test dir
+  lit add .
+  echo 'added' > added.txt
+  lit add added.txt
   cp .git/index ../lit-index
   hexdump -C .git/index > ../lit-index.hex
 
-  rm .git/index
+  rm -r .git
+  git init .
   git add cindex.test dir
+  git commit -m 'first'
+  git add added.txt
   cp .git/index ../git-index
   hexdump -C .git/index > ../git-index.hex
+)
+
+# Status test
+(
+  rm -rf status-repo
+  git init status-repo
+  cd status-repo
+  echo 'modified' > modified.txt
+  echo 'missing' > missing.txt
+  mkdir b
+  touch b/c.txt
+  git add .
+  git commit -m 'initial commit'
+
+  echo 'test' > modified.txt
+  rm missing.txt
+  touch new.txt
+  touch new_added.txt
+  git add new_added.txt
 )

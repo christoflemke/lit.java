@@ -48,9 +48,11 @@ public class StatusCommand implements Command {
     private final SortedMap<String, ModifiedStatus> indexChanges = new TreeMap<>();
     private final SortedMap<String, ModifiedStatus> workspaceChanges = new TreeMap<>();
     private final SortedSet<String> untrackedFiles = new TreeSet<>();
+    private final boolean useColors;
 
-    public StatusCommand(Repository repo) {
+    public StatusCommand(Repository repo, boolean useColors) {
         this.repo = repo;
+        this.useColors = useColors;
         idx = repo.createIndex();
         idx.load();
     }
@@ -72,61 +74,83 @@ public class StatusCommand implements Command {
     }
 
     class LongStatus {
+
+        enum Color {
+            GREEN(32), RED(31);
+
+            final int code;
+
+            Color(int code) {
+                this.code = code;
+            }
+
+            String format(String in, boolean useColor) {
+                if (useColor) {
+                    return in;
+                } else {
+                    return "\u001B[" + code + "m" + in + "\u001B[0m";
+                }
+            }
+        }
+
         private void printLong() {
-            print_changes("Changes to be committed", indexChanges);
-            print_changes("Changes not staged for commit", workspaceChanges);
-            print_changes("Untracked files", untrackedFiles);
+            print_changes("Changes to be committed", indexChanges, Color.GREEN);
+            print_changes("Changes not staged for commit", workspaceChanges, Color.RED);
+            print_changes("Untracked files", untrackedFiles, Color.RED);
             print_commit_status();
         }
 
         private void print_commit_status() {
-            if(!indexChanges.isEmpty()) {
+            if (!indexChanges.isEmpty()) {
                 return;
             }
 
             PrintStream out = repo.io().out();
             if (!workspaceChanges.isEmpty()) {
                 out.println("no changes added to commit");
-            } else if(!untrackedFiles.isEmpty()) {
+            } else if (!untrackedFiles.isEmpty()) {
                 out.println("nothing added to commit but untracked files present");
             } else {
                 out.println("nothing to commit, working tree clean");
             }
         }
 
-        private void print_changes(String message, SortedMap<String, ModifiedStatus> changes) {
-            if(changes.isEmpty()) {
+        private void print_changes(String message, SortedMap<String, ModifiedStatus> changes, Color color) {
+            if (changes.isEmpty()) {
                 return;
             }
             PrintStream out = repo.io().out();
-            out.println(message+":");
+            out.println(message + ":");
             int labelWidth = 12;
             for (var change : changes.entrySet()) {
                 String status = Util.rightPad(change.getValue().longStatus, labelWidth);
-                out.println("\t"+status+change.getKey());
+                out.println("\t" + color.format(status + change.getKey(), useColors));
             }
         }
 
-        private void print_changes(String message, SortedSet<String> changes) {
-            if(changes.isEmpty()) {
+        private void print_changes(String message, SortedSet<String> changes, Color color) {
+            if (changes.isEmpty()) {
                 return;
             }
             PrintStream out = repo.io().out();
-            out.println(message+":");
+            out.println(message + ":");
             for (var change : changes) {
-                out.println("\t"+change);
+                out.println("\t" + color.format(change, useColors));
             }
         }
     }
+
     private void printPorcelain() {
         for (var path : changed) {
             if (untrackedFiles.contains(path)) {
-                repo.io().out().println("?? " + path);
                 continue;
             }
             String left = indexChanges.getOrDefault(path, ModifiedStatus.NO_STATUS).shortStatus;
             String right = workspaceChanges.getOrDefault(path, ModifiedStatus.NO_STATUS).shortStatus;
             repo.io().out().println(left + right + " " + path);
+        }
+        for (var path : untrackedFiles) {
+            repo.io().out().println("?? " + path);
         }
     }
 

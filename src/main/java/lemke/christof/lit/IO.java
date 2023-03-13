@@ -2,29 +2,20 @@ package lemke.christof.lit;
 
 import java.io.*;
 
-public interface IO {
-    InputStream in();
-
-    PrintStream out();
-
-    PrintStream err();
-
+public record IO(InputStream in, PrintStream out, PrintStream err) {
     public static IO createDefault() {
-        return new IO() {
-            @Override
-            public InputStream in() {
-                return System.in;
-            }
+        return new IO(System.in, System.out, System.err);
+    }
 
-            @Override
-            public PrintStream out() {
-                return System.out;
-            }
+    public IO withIn(InputStream replacement) {
+        return new IO(replacement, out, err);
+    }
 
-            @Override
-            public PrintStream err() {
-                return System.err;
-            }
-        };
+    public IO withOut(PrintStream replacement) {
+        return new IO(in, replacement, err);
+    }
+
+    public IO withErr(PrintStream replacement) {
+        return new IO(in, out, replacement);
     }
 }

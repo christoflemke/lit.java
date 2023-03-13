@@ -1,6 +1,5 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.commands.StatusCommand;
 import lemke.christof.lit.model.Blob;
 import lemke.christof.lit.model.FileStat;
 
@@ -11,14 +10,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributes;
-import java.nio.file.attribute.PosixFilePermission;
-import java.security.DigestInputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.temporal.ChronoField;
 import java.util.*;
 
 public class Index {
@@ -56,22 +50,26 @@ public class Index {
     }
 
 
-    private DataInputStream openStream(MessageDigest digest) throws FileNotFoundException {
-        InputStream in = new FileInputStream(indexPath.toFile());
-        DigestInputStream digestInputStream = new DigestInputStream(in, digest);
-        return new DataInputStream(digestInputStream);
+    private InputStream openStream() throws FileNotFoundException {
+        return new FileInputStream(indexPath.toFile());
     }
 
     public void load() {
-        MessageDigest digest = createSha1();
-        try (DataInputStream dataInputStream = openStream(digest)) {
-            int entryCount = readHeader(dataInputStream);
 
-            readEntries(dataInputStream, entryCount);
+        try (InputStream in = openStream()) {
+            byte[] indexBytes = in.readAllBytes();
+            ByteBuffer indexBuffer = ByteBuffer.wrap(indexBytes);
+            int entryCount = readHeader(indexBuffer);
 
-            String sum = HexFormat.of().formatHex(digest.digest());
-            byte[] sumBytes = dataInputStream.readNBytes(20);
-            String indexSum = HexFormat.of().formatHex(sumBytes);
+            readEntries(indexBuffer, entryCount);
+
+            skipExtensions(indexBuffer);
+
+            String indexSum = readSum(indexBuffer);
+
+            String sum = calculateSum(indexBuffer);
+
+
             if (!sum.equals(indexSum)) {
                 throw new RuntimeException("Index checksum mismatch. Computed: " + sum + " read: " + indexSum);
             }
@@ -82,28 +80,61 @@ public class Index {
         }
     }
 
-    private void readEntries(DataInputStream in, int entryCount) throws IOException {
+    private static String calculateSum(ByteBuffer indexBuffer) {
+        indexBuffer.position(0);
+        byte[] data = new byte[indexBuffer.limit() - 20];
+        indexBuffer.get(data);
+        MessageDigest digest = createSha1();
+        digest.update(data);
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static String readSum(ByteBuffer indexBuffer) {
+        byte[] sumBytes = new byte[20];
+        indexBuffer.get(sumBytes);
+        String indexSum = HexFormat.of().formatHex(sumBytes);
+        return indexSum;
+    }
+
+    private void skipExtensions(ByteBuffer buffer) {
+        while (true) {
+            byte[] extHeader = new byte[4];
+            buffer.get(extHeader);
+            String extHeaderString = new String(extHeader);
+            if (extHeaderString.matches("\\p{Upper}{4}")) {
+                int size = buffer.getInt();
+                buffer.position(buffer.position() + size);
+            } else {
+                buffer.position(buffer.position() - 4);
+                break;
+            }
+        }
+    }
+
+    private void readEntries(ByteBuffer in, int entryCount) throws IOException {
         for (int i = 0; i < entryCount; i++) {
-            int ctime_sec = in.readInt();
-            int ctime_nano = in.readInt();
-            int mtime_sec = in.readInt();
-            int mtime_nano = in.readInt();
-            int dev = in.readInt();
-            int ino = in.readInt();
-            int mode = in.readInt();
-            int uid = in.readInt();
-            int gid = in.readInt();
-            int fileSize = in.readInt();
-            byte[] oidBytes = in.readNBytes(20);
-            short flags = in.readShort();
-            byte[] pathBytes = in.readNBytes(flags);
+            int ctime_sec = in.getInt();
+            int ctime_nano = in.getInt();
+            int mtime_sec = in.getInt();
+            int mtime_nano = in.getInt();
+            int dev = in.getInt();
+            int ino = in.getInt();
+            int mode = in.getInt();
+            int uid = in.getInt();
+            int gid = in.getInt();
+            int fileSize = in.getInt();
+            byte[] oidBytes = new byte[20];
+            in.get(oidBytes);
+            short flags = in.getShort();
+            byte[] pathBytes = new byte[flags];
+            in.get(pathBytes);
 
-            int paddingLength = 9 - ((7 + pathBytes.length) % 8);
+            int paddingLength = calculatePadding(pathBytes.length);
 
-            byte[] padding = in.readNBytes(paddingLength);
-            Arrays.sort(padding);
-            if (padding[padding.length - 1] != 0) {
-                throw new RuntimeException("padding should be all 0s");
+            for (int p = 0; p < paddingLength; p++) {
+                if (in.get() != (byte)0x00) {
+                    throw new RuntimeException("padding should be all 0s ");
+                }
             }
 
             FileStat stat = new FileStat(ctime_sec,
@@ -127,16 +158,18 @@ public class Index {
         }
     }
 
-    private int readHeader(DataInputStream in) throws IOException {
-        String sig = new String(in.readNBytes(4));
+    private int readHeader(ByteBuffer buffer) throws IOException {
+        byte[] sigBytes = new byte[4];
+        buffer.get(sigBytes);
+        String sig = new String(sigBytes);
         if (!sig.equals("DIRC")) {
             throw new RuntimeException("Invalid signature: " + sig);
         }
-        int version = in.readInt();
+        int version = buffer.getInt();
         if (version != 2) {
             throw new RuntimeException("Unsupported index version: " + version);
         }
-        return in.readInt();
+        return buffer.getInt();
     }
 
     public Blob add(Path path) {
@@ -198,7 +231,9 @@ public class Index {
     public String hash(Path relativePath) {
         return new Blob(ws.read(relativePath)).oid();
     }
-
+    public static int calculatePadding(int pathLength) {
+        return 8 - ((62 + pathLength) % 8);
+    }
     public record Entry(Path path, String oid, FileStat stat) {
 
         public short flags() {
@@ -214,8 +249,8 @@ public class Index {
         }
 
         public byte[] data() {
-            int length = 63 + pathBytes().length;
-            length += 8 - (length % 8);
+            int pathBytes = pathBytes().length;
+            int length = 62 + pathBytes + calculatePadding(pathBytes);
             byte[] bytes = new byte[length];
             ByteBuffer buffer = ByteBuffer.wrap(bytes);
             buffer.putInt(stat.ctime_sec());
@@ -231,7 +266,6 @@ public class Index {
             buffer.put(oidBytes());
             buffer.putShort(flags());
             buffer.put(pathBytes());
-            buffer.put((byte) 0);
             return bytes;
         }
     }

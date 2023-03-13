@@ -13,4 +13,12 @@ public record Repository (Workspace ws, Database db, Refs refs, Environment env,
     public Index createIndex() {
         return new Index(ws);
     }
+
+    public Repository withIO(IO replacementIO) {
+        return new Repository(ws, db, refs, env, replacementIO);
+    }
+
+    public Repository withEnv(Environment replacementEnv) {
+        return new Repository(ws, db, refs, replacementEnv, io);
+    }
 }

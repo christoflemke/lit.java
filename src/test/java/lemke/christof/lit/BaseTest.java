@@ -11,7 +11,8 @@ public class BaseTest {
     protected Lit lit;
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ByteArrayOutputStream err = new ByteArrayOutputStream();
-    Map<String,String> envMap = new HashMap<>();
+    Map<String, String> envMap = new HashMap<>();
+
     {
         envMap.put("GIT_AUTHOR_NAME", "Christof Lemke");
         envMap.put("GIT_COMMITTER_NAME", "Christof Lemke");
@@ -25,25 +26,14 @@ public class BaseTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        Repository r = Repository.create(root);
         byte[] inputBytes = "commit message".getBytes();
-        IO io = new IO() {
-            @Override
-            public InputStream in() {
-                return new ByteArrayInputStream(inputBytes);
-            }
-
-            @Override
-            public PrintStream out() {
-                return new PrintStream(out);
-            }
-
-            @Override
-            public PrintStream err() {
-                return new PrintStream(err);
-            }
-        };
-        repo = new Repository(r.ws(), r.db(), r.refs(), key -> envMap.get(key), io);
+        IO io = IO.createDefault()
+            .withIn(new ByteArrayInputStream(inputBytes))
+            .withOut(new PrintStream(out))
+            .withErr(new PrintStream(err));
+        repo = Repository.create(root)
+            .withEnv(key -> envMap.get(key))
+            .withIO(io);
         lit = new Lit(repo);
         lit.init(root.toString());
     }
@@ -64,15 +54,15 @@ public class BaseTest {
 
     private File resolveFile(String relativePath) {
         Path path = Path.of(relativePath);
-        if(path.isAbsolute()) {
-            throw new RuntimeException("Expected relative path: "+relativePath);
+        if (path.isAbsolute()) {
+            throw new RuntimeException("Expected relative path: " + relativePath);
         }
         return repo.ws().resolve(path).toFile();
     }
 
     protected void makeExecutable(String path) {
-        if(!resolveFile(path).setExecutable(true)) {
-            throw new RuntimeException("Failed to make file executable: "+path);
+        if (!resolveFile(path).setExecutable(true)) {
+            throw new RuntimeException("Failed to make file executable: " + path);
         }
     }
 
@@ -87,13 +77,13 @@ public class BaseTest {
     }
 
     private void delete(File file) {
-        if(file.isDirectory()) {
-            for(File c : file.listFiles()) {
+        if (file.isDirectory()) {
+            for (File c : file.listFiles()) {
                 delete(c);
             }
         }
-        if(!file.delete()) {
-            throw new RuntimeException("Failed to delete file: "+file);
+        if (!file.delete()) {
+            throw new RuntimeException("Failed to delete file: " + file);
         }
     }
 

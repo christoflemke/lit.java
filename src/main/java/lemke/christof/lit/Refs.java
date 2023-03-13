@@ -30,7 +30,13 @@ public record Refs (Path root) {
 
     public String readHead() {
         try {
-            return Files.readString(headPath());
+            String ref = Files.readString(headPath());
+            if (ref.startsWith("ref:")) {
+                String[] split = ref.split(" ");
+                String sha = Files.readString(gitPath().resolve(Path.of(split[1].trim())));
+                return sha.trim();
+            }
+            return ref.trim();
         } catch (NoSuchFileException e) {
             return null;
         } catch (IOException e) {

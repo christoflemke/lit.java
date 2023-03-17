@@ -5,7 +5,7 @@ import java.util.SortedSet;
 
 public record Status(
     SortedSet<String> changed,
-    SortedMap<String, StatusBuilder.ModifiedStatus> indexChanges,
-    SortedMap<String, StatusBuilder.ModifiedStatus> workspaceChanges,
+    SortedMap<String, ModifiedStatus> indexChanges,
+    SortedMap<String, ModifiedStatus> workspaceChanges,
     SortedSet<String> untrackedFiles) {
 }

@@ -5,7 +5,7 @@ import lemke.christof.lit.status.StatusBuilder;
 
 import java.nio.file.Path;
 
-public record Repository (Workspace ws, Database db, Refs refs, Environment env, IO io) {
+public record Repository(Workspace ws, Database db, Refs refs, Environment env, IO io) {
     public static Repository create(Path root) {
         Workspace ws = new Workspace(root);
         return new Repository(ws, new Database(root), new Refs(root), Environment.createDefault(), IO.createDefault());
@@ -25,13 +25,12 @@ public record Repository (Workspace ws, Database db, Refs refs, Environment env,
 
     public Status status() {
         Index idx = createIndex();
-        StatusBuilder status = new StatusBuilder(this, idx);
-        idx.withLock(() -> {
+        StatusBuilder builder = new StatusBuilder(this, idx);
+        return idx.withLock(() -> {
             idx.load();
-            status.computeChanges();
+            Status status = builder.computeChanges();
             idx.commit();
-            return null;
+            return status;
         });
-        return new Status(status.changed(), status.indexChanges(), status.workspaceChanges(), status.untrackedFiles());
     }
 }

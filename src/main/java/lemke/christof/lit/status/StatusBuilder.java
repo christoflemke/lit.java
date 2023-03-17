@@ -14,52 +14,17 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 public class StatusBuilder {
-    public SortedMap<String, ModifiedStatus> indexChanges() {
-        return indexChanges;
-    }
-
-    public SortedMap<String, ModifiedStatus> workspaceChanges() {
-        return workspaceChanges;
-    }
-
-    public SortedSet<String> untrackedFiles() {
-        return untrackedFiles;
-    }
-
-    public SortedSet<String> changed() {
-        return changed;
-    }
-
-    public enum ModifiedStatus {
-        STAGED("S", " "),
-        UNTRACKED("?", " "),
-        WORKSPACE_MODIFIED("M", "modified"),
-        WORKSPACE_DELETED("D", "deleted"),
-        INDEX_ADDED("A", "new file"),
-        INDEX_MODIFIED("M", "modified"),
-        MIXED("_", "_"),
-        NO_STATUS(" ", " ");
-
-        public final String shortStatus;
-        public final String longStatus;
-
-        ModifiedStatus(String shortStatus, String longStatus) {
-            this.shortStatus = shortStatus;
-            this.longStatus = longStatus;
-        }
-    }
-
-    private EnumSet<StatusBuilder.ModifiedStatus> workspaceStatuses = EnumSet.of(
-        StatusBuilder.ModifiedStatus.WORKSPACE_MODIFIED,
-        StatusBuilder.ModifiedStatus.WORKSPACE_DELETED
+    private EnumSet<ModifiedStatus> workspaceStatuses = EnumSet.of(
+        ModifiedStatus.WORKSPACE_MODIFIED,
+        ModifiedStatus.WORKSPACE_DELETED
     );
-    private EnumSet<StatusBuilder.ModifiedStatus> indexStatuses = EnumSet.of(
-        StatusBuilder.ModifiedStatus.INDEX_ADDED,
-        StatusBuilder.ModifiedStatus.INDEX_MODIFIED
+    private EnumSet<ModifiedStatus> indexStatuses = EnumSet.of(
+        ModifiedStatus.INDEX_ADDED,
+        ModifiedStatus.INDEX_MODIFIED
     );
     private final SortedSet<String> changed = new TreeSet<>();
-    private final SortedMap<String, StatusBuilder.ModifiedStatus> indexChanges = new TreeMap<>();
-    private final SortedMap<String, StatusBuilder.ModifiedStatus> workspaceChanges = new TreeMap<>();
+    private final SortedMap<String, ModifiedStatus> indexChanges = new TreeMap<>();
+    private final SortedMap<String, ModifiedStatus> workspaceChanges = new TreeMap<>();
     private final SortedSet<String> untrackedFiles = new TreeSet<>();
     private final Repository repo;
     private final Index idx;
@@ -69,9 +34,10 @@ public class StatusBuilder {
         this.idx = idx;
     }
 
-    public void computeChanges() {
+    public Status computeChanges() {
         repo.ws().walkFileTree(new StatusBuilder.ModificationVisitor());
         computeChangesFromIndex();
+        return new Status(changed, indexChanges, workspaceChanges, untrackedFiles);
     }
 
     private void computeChangesFromIndex() {
@@ -80,18 +46,18 @@ public class StatusBuilder {
         for (Index.Entry entry : idx.entries()) {
             Path path = entry.path();
             if (!repo.ws().resolve(path).toFile().exists()) {
-                addStatus(path.toString(), StatusBuilder.ModifiedStatus.WORKSPACE_DELETED);
+                addStatus(path.toString(), ModifiedStatus.WORKSPACE_DELETED);
             }
             if (headTree.containsKey(path)) {
                 DbObject dbObject = headTree.get(path);
                 System.out.println(dbObject);
             } else {
-                addStatus(path.toString(), StatusBuilder.ModifiedStatus.INDEX_ADDED);
+                addStatus(path.toString(), ModifiedStatus.INDEX_ADDED);
             }
         }
     }
 
-    private void addStatus(String path, StatusBuilder.ModifiedStatus status) {
+    private void addStatus(String path, ModifiedStatus status) {
         changed.add(path);
         if (workspaceStatuses.contains(status)) {
             workspaceChanges.put(path, status);
@@ -99,7 +65,7 @@ public class StatusBuilder {
             indexChanges.put(path, status);
         }
 
-        if (StatusBuilder.ModifiedStatus.UNTRACKED == status) {
+        if (ModifiedStatus.UNTRACKED == status) {
             untrackedFiles.add(path);
         }
     }
@@ -114,34 +80,34 @@ public class StatusBuilder {
     }
 
     private class ModificationVisitor extends SimpleFileVisitor<Path> {
-        Stack<Map<Path, StatusBuilder.ModifiedStatus>> stack = new Stack<>();
+        Stack<Map<Path, ModifiedStatus>> stack = new Stack<>();
 
-        private void put(Path path, StatusBuilder.ModifiedStatus status) {
+        private void put(Path path, ModifiedStatus status) {
             stack.peek().put(path, status);
         }
 
-        private StatusBuilder.ModifiedStatus checkForModification(Path relativePath) {
+        private ModifiedStatus checkForModification(Path relativePath) {
             Optional<Index.Entry> idxEntry = idx.get(relativePath);
             if (!idxEntry.isPresent()) {
-                return StatusBuilder.ModifiedStatus.UNTRACKED;
+                return ModifiedStatus.UNTRACKED;
             }
 
             FileStat currentStat = repo.ws().stat(relativePath);
             if (currentStat.equals(idxEntry.get().stat())) {
-                return StatusBuilder.ModifiedStatus.STAGED;
+                return ModifiedStatus.STAGED;
             }
 
             if (idxEntry.get().stat().mode() != currentStat.mode()) {
-                return StatusBuilder.ModifiedStatus.WORKSPACE_MODIFIED;
+                return ModifiedStatus.WORKSPACE_MODIFIED;
             }
 
             String fileOid = idx.hash(relativePath);
             if (idxEntry.get().oid().equals(fileOid)) {
                 idx.update(relativePath, fileOid, currentStat);
-                return StatusBuilder.ModifiedStatus.STAGED;
+                return ModifiedStatus.STAGED;
             }
 
-            return StatusBuilder.ModifiedStatus.WORKSPACE_MODIFIED;
+            return ModifiedStatus.WORKSPACE_MODIFIED;
         }
 
         @Override
@@ -160,8 +126,8 @@ public class StatusBuilder {
             return FileVisitResult.CONTINUE;
         }
 
-        private void addChanged(Map<Path, StatusBuilder.ModifiedStatus> children) {
-            EnumSet<StatusBuilder.ModifiedStatus> reported = EnumSet.of(StatusBuilder.ModifiedStatus.UNTRACKED, StatusBuilder.ModifiedStatus.WORKSPACE_MODIFIED);
+        private void addChanged(Map<Path, ModifiedStatus> children) {
+            EnumSet<ModifiedStatus> reported = EnumSet.of(ModifiedStatus.UNTRACKED, ModifiedStatus.WORKSPACE_MODIFIED);
             children.entrySet().stream()
                 .filter(e -> reported.contains(e.getValue()))
                 .forEach(e -> {
@@ -173,18 +139,18 @@ public class StatusBuilder {
         @Override
         public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
             Path relativePath = repo.ws().toRelativePath(dir);
-            Map<Path, StatusBuilder.ModifiedStatus> children = stack.pop();
+            Map<Path, ModifiedStatus> children = stack.pop();
             if (stack.isEmpty()) {
                 addChanged(children);
                 return FileVisitResult.CONTINUE;
             }
-            if (children.values().stream().allMatch(s -> s == StatusBuilder.ModifiedStatus.STAGED)) {
-                stack.peek().put(relativePath, StatusBuilder.ModifiedStatus.STAGED);
-            } else if (children.values().stream().allMatch(s -> s == StatusBuilder.ModifiedStatus.UNTRACKED)) {
-                stack.peek().put(relativePath, StatusBuilder.ModifiedStatus.UNTRACKED);
+            if (children.values().stream().allMatch(s -> s == ModifiedStatus.STAGED)) {
+                stack.peek().put(relativePath, ModifiedStatus.STAGED);
+            } else if (children.values().stream().allMatch(s -> s == ModifiedStatus.UNTRACKED)) {
+                stack.peek().put(relativePath, ModifiedStatus.UNTRACKED);
             } else {
                 addChanged(children);
-                stack.peek().put(relativePath, StatusBuilder.ModifiedStatus.MIXED);
+                stack.peek().put(relativePath, ModifiedStatus.MIXED);
             }
             return FileVisitResult.CONTINUE;
         }

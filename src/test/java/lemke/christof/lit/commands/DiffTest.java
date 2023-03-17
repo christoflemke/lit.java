@@ -19,7 +19,7 @@ public class DiffTest extends BaseTest {
                          diff --git a/deleted b/deleted
                          deleted file mode 100644
                          index e69de2..000000
-                         --- a/deleted
+                         --- deleted
                          +++ /dev/null
                          """, lit.output());
     }
@@ -37,8 +37,8 @@ public class DiffTest extends BaseTest {
         assertEquals("""
                          diff --git a/modified b/modified
                          index d80088..ee2b83 100644
-                         --- a/modified
-                         --- b/modified
+                         --- modified
+                         +++ modified
                          """, lit.output());
     }
 }

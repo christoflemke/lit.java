@@ -9,6 +9,13 @@ import lemke.christof.lit.status.Status;
 import java.nio.file.Path;
 
 public class DiffCommand implements Command {
+
+    private record Target(Path path, String oid, String mode) {
+        String diffPath() {
+            return mode == null ? NULL_PATH : path.toString();
+        }
+    }
+
     private static final String NULL_OID = Util.repeat("0", 40);
     private static final String NULL_PATH = "/dev/null";
     private final Repository repo;
@@ -25,59 +32,60 @@ public class DiffCommand implements Command {
     @Override
     public void run(String[] args) {
         for(var change : status.workspaceChanges().entrySet()) {
+            Path path = Path.of(change.getKey());
             switch (change.getValue()) {
-                case WORKSPACE_MODIFIED -> diffFileModified(change.getKey());
-                case WORKSPACE_DELETED -> diffFileDeleted(change.getKey());
+                case WORKSPACE_MODIFIED -> print_diff(fromIndex(path), fromFile(path));
+                case WORKSPACE_DELETED -> print_diff(fromIndex(path), fromNothing(path));
             }
         }
     }
 
-    private void diffFileDeleted(String key) {
-        Path path = Path.of(key);
-
-        Index.Entry entry = idx.get(path).get();
-        String aOid = entry.oid();
-        String aMode = entry.stat().modeString();
-        Path aPath = Path.of("a").resolve(key);
-
-        String bOid = NULL_OID;
-        Path bPath = Path.of("b").resolve(path);
-
-        println("diff --git "+aPath+" "+bPath);
-        println("deleted file mode "+aMode);
-        println("index "+shorten(aOid)+".."+shorten(bOid));
-        println("--- "+aPath);
-        println("+++ "+NULL_PATH);
+    private Target fromFile(Path path) {
+        Blob blob = Blob.fromString(repo.ws().readString(path));
+        String oid = blob.oid();
+        String mode = repo.ws().stat(path).modeString();
+        return new Target(path, oid, mode);
     }
 
-    private void diffFileModified(String key) {
-        Path path = Path.of(key);
-
+    private Target fromIndex(Path path) {
         Index.Entry entry = idx.get(path).get();
-        String aOid = entry.oid();
-        String aMode = entry.stat().modeString();
-        Path aPath = Path.of("a").resolve(key);
+        String oid = entry.oid();
+        String mode = entry.stat().modeString();
+        return new Target(path, oid, mode);
+    }
 
-        Blob blob = Blob.fromString(repo.ws().readString(path));
-        String bOid = blob.oid();
-        String bMode = repo.ws().stat(path).modeString();
-        Path bPath = Path.of("b").resolve(key);
+    private Target fromNothing(Path path) {
+        return new Target(path, NULL_OID, null);
+    }
 
+    private void print_diff(Target a, Target b) {
+        Path aPath = Path.of("a").resolve(a.path);
+        Path bPath = Path.of("b").resolve(b.path);
         println("diff --git "+aPath+" "+bPath);
-        if (!aMode.equals(bMode)) {
-            println("old mode "+aMode);
-            println("new mode "+bMode);
+        print_diff_mode(a, b);
+        print_diff_content(a, b);
+    }
+
+    private void print_diff_mode(Target a, Target b) {
+        if (b.mode == null) {
+            println("deleted file mode "+a.mode);
+        } else if (!a.mode.equals(b.mode)){
+            println("old mode "+a.mode);
+            println("new mode "+b.mode);
         }
-        if(aOid.equals(bOid)) {
+    }
+
+    private void print_diff_content(Target a, Target b) {
+        if(a.oid.equals(b.oid)) {
             return;
         }
-        String oidRange = "index "+shorten(aOid) + ".." + shorten(bOid);
-        if (aMode.equals(bMode)) {
-            oidRange += " " + aMode;
+        String oidRange = "index "+shorten(a.oid) + ".." + shorten(b.oid);
+        if (a.mode.equals(b.mode)) {
+            oidRange += " " + a.mode;
         }
         println(oidRange);
-        println("--- "+aPath);
-        println("--- "+bPath);
+        println("--- "+a.diffPath());
+        println("+++ "+b.diffPath());
     }
 
     private String shorten(String aOid) {

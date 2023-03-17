@@ -1,7 +1,8 @@
 package lemke.christof.lit;
 
-import java.io.InputStream;
-import java.io.OutputStream;
+import lemke.christof.lit.status.Status;
+import lemke.christof.lit.status.StatusBuilder;
+
 import java.nio.file.Path;
 
 public record Repository (Workspace ws, Database db, Refs refs, Environment env, IO io) {
@@ -20,5 +21,17 @@ public record Repository (Workspace ws, Database db, Refs refs, Environment env,
 
     public Repository withEnv(Environment replacementEnv) {
         return new Repository(ws, db, refs, replacementEnv, io);
+    }
+
+    public Status status() {
+        Index idx = createIndex();
+        StatusBuilder status = new StatusBuilder(this, idx);
+        idx.withLock(() -> {
+            idx.load();
+            status.computeChanges();
+            idx.commit();
+            return null;
+        });
+        return new Status(status.changed(), status.indexChanges(), status.workspaceChanges(), status.untrackedFiles());
     }
 }

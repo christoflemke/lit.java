@@ -1,8 +1,8 @@
 package lemke.christof.lit.commands;
 
-import lemke.christof.lit.Index;
 import lemke.christof.lit.Repository;
-import lemke.christof.lit.Status;
+import lemke.christof.lit.status.Status;
+import lemke.christof.lit.status.StatusBuilder;
 import lemke.christof.lit.Util;
 
 import java.io.PrintStream;
@@ -19,14 +19,7 @@ public class StatusCommand implements Command {
 
     @Override
     public void run(String[] args) {
-        Index idx = repo.createIndex();
-        Status status = new Status(repo, idx);
-        idx.withLock(() -> {
-            idx.load();
-            status.computeChanges();
-            idx.commit();
-            return null;
-        });
+        Status status = repo.status();
 
         if (args.length > 0 && args[0].equals("--porcelain")) {
             printPorcelain(status);
@@ -98,7 +91,7 @@ public class StatusCommand implements Command {
             }
         }
 
-        private void print_changes(String message, SortedMap<String, Status.ModifiedStatus> changes, Color color) {
+        private void print_changes(String message, SortedMap<String, StatusBuilder.ModifiedStatus> changes, Color color) {
             if (changes.isEmpty()) {
                 return;
             }
@@ -129,8 +122,8 @@ public class StatusCommand implements Command {
             if (status.untrackedFiles().contains(path)) {
                 continue;
             }
-            String left = status.indexChanges().getOrDefault(path, Status.ModifiedStatus.NO_STATUS).shortStatus;
-            String right = status.workspaceChanges().getOrDefault(path, Status.ModifiedStatus.NO_STATUS).shortStatus;
+            String left = status.indexChanges().getOrDefault(path, StatusBuilder.ModifiedStatus.NO_STATUS).shortStatus;
+            String right = status.workspaceChanges().getOrDefault(path, StatusBuilder.ModifiedStatus.NO_STATUS).shortStatus;
             repo.io().out().println(left + right + " " + path);
         }
         for (var path : status.untrackedFiles()) {

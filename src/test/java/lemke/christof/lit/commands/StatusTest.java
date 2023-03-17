@@ -1,11 +1,13 @@
 package lemke.christof.lit.commands;
 
 import lemke.christof.lit.BaseTest;
+import lemke.christof.lit.Index;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class StatusTest extends BaseTest {
     @Test
@@ -73,6 +75,26 @@ public class StatusTest extends BaseTest {
                          ?? a/b/c/
                          ?? a/outer.txt
                          """, output());
+    }
+
+    @Test
+    public void updatesIndexOnTimestampChange() {
+        write("test");
+        lit.add(".");
+
+        Index index = repo.createIndex();
+        index.load();
+        Index.Entry entry = index.entries().stream().findFirst().get();
+        int mtime_nano = entry.stat().mtime_nano();
+
+        touch("test");
+        lit.statusPorcelain();
+
+        index = repo.createIndex();
+        index.load();
+        entry = index.entries().stream().findFirst().get();
+        int mtime_nanoAfter = entry.stat().mtime_nano();
+        assertNotEquals(mtime_nano, mtime_nanoAfter);
     }
 
     @Nested

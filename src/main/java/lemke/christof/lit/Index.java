@@ -14,6 +14,7 @@ import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.function.Supplier;
 
 public class Index {
 
@@ -34,21 +35,39 @@ public class Index {
         }
     }
 
+    Path indexPath() {
+        return indexPath;
+    }
+
     public Set<Entry> entries() {
         return entries;
     }
 
-    public FileLock tryLock() throws IOException {
+    private FileLock tryLock() throws IOException {
         return new RandomAccessFile(lockPath.toFile(), "rw").getChannel().tryLock();
     }
 
-    public void unlock(FileLock lock) throws IOException {
+    private void unlock(FileLock lock) throws IOException {
         if (lock != null) {
             lock.release();
             Files.delete(lockPath);
         }
     }
 
+    public <T> T withLock(Supplier<T> fn) {
+        try (FileLock lock = tryLock()) {
+            if (lock == null) {
+                throw new RuntimeException("Failed to acquire index.lock");
+            }
+            try {
+                return fn.get();
+            } finally {
+                unlock(lock);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private InputStream openStream() throws FileNotFoundException {
         return new FileInputStream(indexPath.toFile());
@@ -234,6 +253,16 @@ public class Index {
     public static int calculatePadding(int pathLength) {
         return 8 - ((62 + pathLength) % 8);
     }
+
+    public void update(Path path, String oid, FileStat currentStat) {
+        Entry e = new Entry(path, oid, currentStat);
+        boolean removed = entries.remove(e);
+        boolean added = entries.add(e);
+        if(!removed || !added) {
+            System.err.println("Index did not contain entry for: "+path);
+        }
+    }
+
     public record Entry(Path path, String oid, FileStat stat) {
 
         public short flags() {
@@ -267,6 +296,19 @@ public class Index {
             buffer.putShort(flags());
             buffer.put(pathBytes());
             return bytes;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof Entry) {
+                return ((Entry) obj).path.equals(this.path);
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return path.hashCode();
         }
     }
 }

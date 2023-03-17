@@ -16,24 +16,16 @@ public record AddCommand(Repository repo) implements Command {
     @Override
     public void run(String[] args) {
         Index idx = repo.createIndex();
-        try (FileLock lock = idx.tryLock()) {
-            if (lock == null) {
-                throw new RuntimeException("Failed to acquire index.lock");
+        idx.withLock(() -> {
+            idx.load();
+            Set<Path> files = files(args).collect(Collectors.toSet());
+            for (Path path : files) {
+                Blob blob = idx.add(path);
+                repo.db().write(blob);
             }
-            try {
-                idx.load();
-                Set<Path> files = files(args).collect(Collectors.toSet());
-                for (Path path : files) {
-                    Blob blob = idx.add(path);
-                    repo.db().write(blob);
-                }
-                idx.commit();
-            } finally {
-                idx.unlock(lock);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+            idx.commit();
+            return null;
+        });
     }
 
     Stream<Path> files(String[] args) {

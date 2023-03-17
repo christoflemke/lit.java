@@ -20,9 +20,13 @@ public class StatusCommand implements Command {
     @Override
     public void run(String[] args) {
         Index idx = repo.createIndex();
-        idx.load();
         Status status = new Status(repo, idx);
-        status.computeChanges();
+        idx.withLock(() -> {
+            idx.load();
+            status.computeChanges();
+            idx.commit();
+            return null;
+        });
 
         if (args.length > 0 && args[0].equals("--porcelain")) {
             printPorcelain(status);

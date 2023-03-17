@@ -23,21 +23,16 @@ public class IndexTest extends BaseTest {
 
     @Test
     public void testIndex() throws IOException {
-        Path root = Files.createTempDirectory("test-");
-        Files.createDirectories(root.resolve(".git"));
+        write("test", "foo");
 
-        Path path = root.resolve("test");
-        Files.writeString(path, "foo");
-
-        Workspace ws = new Workspace(root);
-        Index index = new Index(ws);
-        index.add(root.relativize(path));
+        Index index = repo.createIndex();
+        index.add(Path.of("test"));
         index.commit();
 
-        long size = Files.size(root.resolve(".git").resolve("index"));
+        long size = Files.size(index.indexPath());
         assertEquals(104, size);
 
-        Index fromDisk = new Index(ws);
+        Index fromDisk = repo.createIndex();
         fromDisk.load();
 
         assertEquals(index.entries(), fromDisk.entries());
@@ -46,24 +41,19 @@ public class IndexTest extends BaseTest {
 
     @Test
     public void updateTest() throws IOException {
-        Path root = Files.createTempDirectory("test-");
-        Files.createDirectories(root.resolve(".git"));
-        Workspace ws = new Workspace(root);
         {
-            Path path = root.resolve("test");
-            Files.writeString(path, "foo");
-            Index index = new Index(ws);
-            index.add(root.relativize(path));
+            write("test", "foo");
+            Index index = repo.createIndex();
+            index.add(Path.of("test"));
             index.commit();
             assertEquals(1, index.entries().size());
         }
 
         {
-            Path path = root.resolve("test2");
-            Files.writeString(path, "bar");
-            Index index = new Index(ws);
+            write("test2", "bar");
+            Index index = repo.createIndex();
             index.load();
-            index.add(root.relativize(path));
+            index.add(Path.of("test2"));
             index.commit();
             assertEquals(2, index.entries().size());
         }

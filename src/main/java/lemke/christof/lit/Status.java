@@ -120,22 +120,26 @@ public class Status {
 
         private Status.ModifiedStatus checkForModification(Path relativePath) {
             Optional<Index.Entry> idxEntry = idx.get(relativePath);
-            if (idxEntry.isPresent()) {
-                FileStat currentStat = repo.ws().stat(relativePath);
-                if (currentStat.equals(idxEntry.get().stat())) {
-                    return Status.ModifiedStatus.STAGED;
-                } else {
-                    if (idxEntry.get().stat().mode() != currentStat.mode()) {
-                        return Status.ModifiedStatus.WORKSPACE_MODIFIED;
-                    } else if (idxEntry.get().oid().equals(idx.hash(relativePath))) {
-                        return Status.ModifiedStatus.STAGED;
-                    } else {
-                        return Status.ModifiedStatus.WORKSPACE_MODIFIED;
-                    }
-                }
-            } else {
+            if (!idxEntry.isPresent()) {
                 return Status.ModifiedStatus.UNTRACKED;
             }
+
+            FileStat currentStat = repo.ws().stat(relativePath);
+            if (currentStat.equals(idxEntry.get().stat())) {
+                return Status.ModifiedStatus.STAGED;
+            }
+
+            if (idxEntry.get().stat().mode() != currentStat.mode()) {
+                return Status.ModifiedStatus.WORKSPACE_MODIFIED;
+            }
+
+            String fileOid = idx.hash(relativePath);
+            if (idxEntry.get().oid().equals(fileOid)) {
+                idx.update(relativePath, fileOid, currentStat);
+                return Status.ModifiedStatus.STAGED;
+            }
+
+            return Status.ModifiedStatus.WORKSPACE_MODIFIED;
         }
 
         @Override

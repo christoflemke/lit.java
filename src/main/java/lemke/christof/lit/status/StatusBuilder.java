@@ -50,7 +50,6 @@ public class StatusBuilder {
             }
             if (headTree.containsKey(path)) {
                 DbObject dbObject = headTree.get(path);
-                System.out.println(dbObject);
             } else {
                 addStatus(path.toString(), ModifiedStatus.INDEX_ADDED);
             }

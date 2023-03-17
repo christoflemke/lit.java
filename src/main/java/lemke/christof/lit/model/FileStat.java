@@ -7,4 +7,8 @@ public record FileStat(int ctime_sec, int ctime_nano, int mtime_sec, int mtime_n
             this.mode == stat.mode &&
             this.size == stat.size;
     }
+
+    public String modeString() {
+        return Integer.toOctalString(mode);
+    }
 }

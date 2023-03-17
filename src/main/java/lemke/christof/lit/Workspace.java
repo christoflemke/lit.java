@@ -7,6 +7,7 @@ import lemke.christof.lit.model.FileStat;
 import lemke.christof.lit.model.Tree;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFileAttributeView;
@@ -142,6 +143,10 @@ public record Workspace(Path root) {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String readString(Path f) {
+        return new String(read(f), StandardCharsets.UTF_8);
     }
 
     static int REGULAR_MODE = 0100644;

@@ -19,6 +19,6 @@ public class ListHeadTest extends BaseTest {
         assertEquals("""
                          100644 e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 1.txt
                          100644 e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 a/2.txt
-                         """, output());
+                         """, lit.output());
     }
 }

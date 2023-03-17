@@ -2,9 +2,13 @@ package lemke.christof.lit;
 
 public class Util {
     public static String pad(int amount) {
+        return repeat(" ", amount);
+    }
+
+    public static String repeat(String s, int amount) {
         String result = "";
         for (int i = 0; i < amount; i++) {
-            result += " ";
+            result += s;
         }
         return result;
     }

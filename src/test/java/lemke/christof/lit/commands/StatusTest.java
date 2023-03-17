@@ -22,7 +22,7 @@ public class StatusTest extends BaseTest {
         lit.statusPorcelain();
         assertEquals("""
                          A  added.txt
-                         """, output());
+                         """, lit.output());
     }
 
     @Test
@@ -32,7 +32,7 @@ public class StatusTest extends BaseTest {
         lit.commit();
 
         lit.statusPorcelain();
-        assertEquals("", output());
+        assertEquals("", lit.output());
     }
 
     @Test
@@ -46,7 +46,7 @@ public class StatusTest extends BaseTest {
         lit.statusPorcelain();
         assertEquals("""
                          ?? uncommitted.txt
-                         """, output());
+                         """, lit.output());
     }
 
     @Test
@@ -58,7 +58,7 @@ public class StatusTest extends BaseTest {
         assertEquals("""
                          ?? dir/
                          ?? file.txt
-                         """, output());
+                         """, lit.output());
     }
 
     @Test
@@ -74,7 +74,7 @@ public class StatusTest extends BaseTest {
         assertEquals("""
                          ?? a/b/c/
                          ?? a/outer.txt
-                         """, output());
+                         """, lit.output());
     }
 
     @Test
@@ -111,7 +111,7 @@ public class StatusTest extends BaseTest {
         @Test
         public void printsNothingIfNoFilesAreChanged() {
             lit.statusPorcelain();
-            assertEquals("", output());
+            assertEquals("", lit.output());
         }
 
         @Test
@@ -123,7 +123,7 @@ public class StatusTest extends BaseTest {
             assertEquals("""
                               M 1.txt
                               M a/2.txt
-                             """, output());
+                             """, lit.output());
         }
 
         @Test
@@ -134,7 +134,7 @@ public class StatusTest extends BaseTest {
 
             assertEquals("""
                               M a/2.txt
-                             """, output());
+                             """, lit.output());
         }
 
         @Test
@@ -145,7 +145,7 @@ public class StatusTest extends BaseTest {
 
             assertEquals("""
                               M a/b/3.txt
-                             """, output());
+                             """, lit.output());
         }
 
         @Test
@@ -154,7 +154,7 @@ public class StatusTest extends BaseTest {
 
             lit.statusPorcelain();
 
-            assertEquals("", output());
+            assertEquals("", lit.output());
         }
 
         @Test
@@ -165,7 +165,7 @@ public class StatusTest extends BaseTest {
 
             assertEquals("""
                               D a/2.txt
-                             """, output());
+                             """, lit.output());
         }
 
         @Test
@@ -177,7 +177,7 @@ public class StatusTest extends BaseTest {
             assertEquals("""
                               D a/2.txt
                               D a/b/3.txt
-                             """, output());
+                             """, lit.output());
         }
 
 
@@ -190,7 +190,7 @@ public class StatusTest extends BaseTest {
 
             assertEquals("""
                              A  a/4.txt
-                             """, output());
+                             """, lit.output());
         }
 
         @Test
@@ -202,7 +202,7 @@ public class StatusTest extends BaseTest {
 
             assertEquals("""
                              A  d/e/5.txt
-                             """, output());
+                             """, lit.output());
         }
     }
 }

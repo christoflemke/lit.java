@@ -56,37 +56,29 @@ public class CompareRepos {
 
     @Test
     public void comparePorcelainOutput() throws Exception {
-        ProcessBuilder processBuilder = new ProcessBuilder("git","status","--porcelain");
         Path repoPath = TestUtil.projectRoot().resolve("testdata").resolve("status-repo");
-        processBuilder.directory(repoPath.toFile());
-        Process process = processBuilder.start();
-        int exitCode = process.waitFor();
-        String gitOutput = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        assertEquals(0, exitCode);
 
-        var out = new ByteArrayOutputStream();
-        IO io = IO.createDefault().withOut(new PrintStream(out));
-        Lit lit = new Lit(Repository.create(repoPath).withIO(io));
+        Git.GitCommand statusCommand = new Git(repoPath).statusPorcelain();
+
+        assertEquals(0, statusCommand.exitCode());
+
+        Lit lit = new Lit(repoPath);
         lit.statusPorcelain();
 
-        assertEquals(gitOutput, new String(out.toByteArray()));
+        assertEquals(statusCommand.output(), lit.output());
     }
 
     @Test
     public void compareLongOutput() throws Exception {
-        ProcessBuilder processBuilder = new ProcessBuilder("git","status");
         Path repoPath = TestUtil.projectRoot().resolve("testdata").resolve("status-repo");
-        processBuilder.directory(repoPath.toFile());
-        Process process = processBuilder.start();
-        int exitCode = process.waitFor();
-        String gitOutput = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        assertEquals(0, exitCode);
 
-        var out = new ByteArrayOutputStream();
-        IO io = IO.createDefault().withOut(new PrintStream(out));
-        Lit lit = new Lit(Repository.create(repoPath).withIO(io));
+        Git git = new Git(repoPath);
+        Git.GitCommand statusCommand = git.statusLong();
+        assertEquals(0, statusCommand.exitCode());
+
+        Lit lit = new Lit(repoPath);
         lit.statusLong();
 
-        assertEquals(gitOutput, new String(out.toByteArray()));
+        assertEquals(statusCommand.output(), lit.output());
     }
 }

@@ -9,32 +9,16 @@ import java.util.Map;
 public class BaseTest {
     protected Repository repo;
     protected Lit lit;
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ByteArrayOutputStream err = new ByteArrayOutputStream();
-    Map<String, String> envMap = new HashMap<>();
 
     {
-        envMap.put("GIT_AUTHOR_NAME", "Christof Lemke");
-        envMap.put("GIT_COMMITTER_NAME", "Christof Lemke");
-        envMap.put("GIT_AUTHOR_EMAIL", "doesnotexist@gmail.com");
-    }
-
-    {
-        Path root = null;
+        final Path root;
         try {
             root = Files.createTempDirectory("test-");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        byte[] inputBytes = "commit message".getBytes();
-        IO io = IO.createDefault()
-            .withIn(new ByteArrayInputStream(inputBytes))
-            .withOut(new PrintStream(out))
-            .withErr(new PrintStream(err));
-        repo = Repository.create(root)
-            .withEnv(key -> envMap.get(key))
-            .withIO(io);
-        lit = new Lit(repo);
+        lit = new Lit(root);
+        this.repo = lit.repo();
         lit.init(root.toString());
     }
 
@@ -85,13 +69,5 @@ public class BaseTest {
         if (!file.delete()) {
             throw new RuntimeException("Failed to delete file: " + file);
         }
-    }
-
-    protected String output() {
-        return out.toString();
-    }
-
-    protected void resetOutput() {
-        out.reset();
     }
 }

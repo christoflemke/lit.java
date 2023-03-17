@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public record Workspace (Path root){
+public record Workspace(Path root) {
 
     public boolean isDirectory(Path path) {
         return root.resolve(path).toFile().isDirectory();
@@ -44,14 +44,14 @@ public record Workspace (Path root){
         return root.resolve(relativePath);
     }
 
-    record FileTree (Path path, List<FileTree> children) {
+    record FileTree(Path path, List<FileTree> children) {
         public String print(int indent) {
             String result = "";
-            for(int i = 0; i<indent; i++) {
+            for (int i = 0; i < indent; i++) {
                 result += " ";
             }
             result += path + "\n";
-            for(FileTree c: children) {
+            for (FileTree c : children) {
                 result += c.print(indent + 2);
             }
             return result;
@@ -65,24 +65,29 @@ public record Workspace (Path root){
     public Stream<Path> listFiles() {
         try {
             return Files.list(root)
-                    .filter(p -> !Files.isDirectory(p))
-                    .map(f -> root.relativize(f))
-                    .sorted();
+                .filter(p -> !Files.isDirectory(p))
+                .map(f -> root.relativize(f))
+                .sorted();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public record BuildResult (Tree root, List<Tree> trees) {}
+    public record BuildResult(Tree root, List<Tree> trees) {
+    }
 
-    public void walkFileTree(FileVisitor<? super java.nio.file.Path> visitor) throws IOException {
-        Files.walkFileTree(root, visitor);
+    public void walkFileTree(FileVisitor<? super java.nio.file.Path> visitor) {
+        try {
+            Files.walkFileTree(root, visitor);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String mode(Path name) {
         if (Files.isDirectory(name)) {
             return "40000";
-        } else if(Files.isExecutable(name)) {
+        } else if (Files.isExecutable(name)) {
             return "100755";
         } else {
             return "100644";
@@ -90,48 +95,45 @@ public record Workspace (Path root){
     }
 
     public BuildResult buildTree(Index idx) {
-        try {
-            List<Tree> trees = new ArrayList<>();
-            AtomicReference<Tree> rootTree = new AtomicReference<>();
-            walkFileTree(new SimpleFileVisitor<>() {
-                Stack<List<Entry>> children = new Stack<>();
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    if (dir.endsWith(".git")) {
-                        return FileVisitResult.SKIP_SUBTREE;
-                    }
-                    children.push(new ArrayList<>());
-                    return FileVisitResult.CONTINUE;
+        List<Tree> trees = new ArrayList<>();
+        AtomicReference<Tree> rootTree = new AtomicReference<>();
+        walkFileTree(new SimpleFileVisitor<>() {
+            Stack<List<Entry>> children = new Stack<>();
+
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                if (dir.endsWith(".git")) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                children.push(new ArrayList<>());
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                Tree tree = new Tree(children.pop());
+                trees.add(tree);
+                if (children.empty()) {
+                    rootTree.set(tree);
+                } else {
+                    Path path = root.relativize(dir);
+                    children.peek().add(new Entry(path, tree.oid(), mode(path)));
                 }
 
-                @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-                    Tree tree = new Tree(children.pop());
-                    trees.add(tree);
-                    if(children.empty()) {
-                        rootTree.set(tree);
-                    } else {
-                        Path path = root.relativize(dir);
-                        children.peek().add(new Entry(path, tree.oid(), mode(path)));
-                    }
+                return FileVisitResult.CONTINUE;
+            }
 
-                    return FileVisitResult.CONTINUE;
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                Path relativePath = root.relativize(file);
+                Optional<Index.Entry> entry = idx.get(relativePath);
+                if (entry.isPresent()) {
+                    children.peek().add(new Entry(relativePath, entry.get().oid(), mode(relativePath)));
                 }
-
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    Path relativePath = root.relativize(file);
-                    Optional<Index.Entry> entry = idx.get(relativePath);
-                    if (entry.isPresent()) {
-                        children.peek().add(new Entry(relativePath, entry.get().oid(), mode(relativePath)));
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-            return new BuildResult(rootTree.get(), trees);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        return new BuildResult(rootTree.get(), trees);
     }
 
     public byte[] read(Path f) {
@@ -141,10 +143,12 @@ public record Workspace (Path root){
             throw new RuntimeException(e);
         }
     }
+
     static int REGULAR_MODE = 0100644;
     static int EXECUTABLE_MODE = 0100755;
+
     public FileStat stat(Path path) {
-        if(path.isAbsolute()) {
+        if (path.isAbsolute()) {
             throw new RuntimeException("Expected relative path");
         }
         Path absolutePath = resolve(path);
@@ -159,16 +163,16 @@ public record Workspace (Path root){
 
         try {
             return new FileStat(
-                    Math.toIntExact(attributes.creationTime().toMillis() / 1000),
-                    attributes.creationTime().toInstant().get(ChronoField.NANO_OF_SECOND),
-                    Math.toIntExact(attributes.lastModifiedTime().toMillis() / 1000),
-                    attributes.lastModifiedTime().toInstant().get(ChronoField.NANO_OF_SECOND),
-                    Math.toIntExact((Long) Files.getAttribute(absolutePath, "unix:dev")),
-                    Math.toIntExact((Long) Files.getAttribute(absolutePath, "unix:ino")),
-                    attributes.permissions().contains(PosixFilePermission.OWNER_EXECUTE) ? EXECUTABLE_MODE : REGULAR_MODE,
-                    (Integer) Files.getAttribute(absolutePath, "unix:uid"),
-                    (Integer) Files.getAttribute(absolutePath, "unix:gid"),
-                    Math.toIntExact(Math.min(attributes.size(), Integer.MAX_VALUE))
+                Math.toIntExact(attributes.creationTime().toMillis() / 1000),
+                attributes.creationTime().toInstant().get(ChronoField.NANO_OF_SECOND),
+                Math.toIntExact(attributes.lastModifiedTime().toMillis() / 1000),
+                attributes.lastModifiedTime().toInstant().get(ChronoField.NANO_OF_SECOND),
+                Math.toIntExact((Long) Files.getAttribute(absolutePath, "unix:dev")),
+                Math.toIntExact((Long) Files.getAttribute(absolutePath, "unix:ino")),
+                attributes.permissions().contains(PosixFilePermission.OWNER_EXECUTE) ? EXECUTABLE_MODE : REGULAR_MODE,
+                (Integer) Files.getAttribute(absolutePath, "unix:uid"),
+                (Integer) Files.getAttribute(absolutePath, "unix:gid"),
+                Math.toIntExact(Math.min(attributes.size(), Integer.MAX_VALUE))
             );
         } catch (IOException e) {
             throw new RuntimeException(e);

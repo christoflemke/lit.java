@@ -1,7 +1,9 @@
 package lemke.christof.lit.commands;
 
 import lemke.christof.lit.BaseTest;
+import lemke.christof.lit.Git;
 import lemke.christof.lit.Index;
+import lemke.christof.lit.Lit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,43 +12,46 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class StatusTest extends BaseTest {
+
+    @BeforeEach
+    public void setup() {
+        git.init();
+    }
+
     @Test
     public void listsUntrackedFilesInNameOrder() {
         write("file.txt");
         write("another.txt");
-        lit.add(".");
-        lit.commit();
+        git.add(".");
+        git.commit();
         write("added.txt");
         lit.add("added.txt");
 
-        lit.statusPorcelain();
-        assertEquals("""
-                         A  added.txt
-                         """, lit.output());
+        validateStatus("""
+                           A  added.txt
+                           """);
     }
 
     @Test
     public void ignoresTrackedFiles() {
         write("committed.txt");
-        lit.add("committed.txt");
-        lit.commit();
+        git.add("committed.txt");
+        git.commit();
 
-        lit.statusPorcelain();
-        assertEquals("", lit.output());
+        validateStatus("");
     }
 
     @Test
     public void listsFilesAsUntrackedIfTheyAreNotInTheIndex() {
         write("committed.txt");
-        lit.add("committed.txt");
-        lit.commit();
+        git.add("committed.txt");
+        git.commit();
 
         write("uncommitted.txt");
 
-        lit.statusPorcelain();
-        assertEquals("""
-                         ?? uncommitted.txt
-                         """, lit.output());
+        validateStatus("""
+                           ?? uncommitted.txt
+                           """);
     }
 
     @Test
@@ -54,33 +59,31 @@ public class StatusTest extends BaseTest {
         write("file.txt");
         write("dir/another.txt");
 
-        lit.statusPorcelain();
-        assertEquals("""
-                         ?? dir/
-                         ?? file.txt
-                         """, lit.output());
+        validateStatus("""
+                           ?? dir/
+                           ?? file.txt
+                           """);
     }
 
     @Test
     public void listsUntrackedFilesInsideTrackedDirectories() {
         write("a/b/inner.txt");
-        lit.add(".");
-        lit.commit();
+        git.add(".");
+        git.commit();
 
         write("a/outer.txt");
         write("a/b/c/file.txt");
 
-        lit.statusPorcelain();
-        assertEquals("""
-                         ?? a/b/c/
-                         ?? a/outer.txt
-                         """, lit.output());
+        validateStatus("""
+                           ?? a/b/c/
+                           ?? a/outer.txt
+                           """);
     }
 
     @Test
     public void updatesIndexOnTimestampChange() {
         write("test");
-        lit.add(".");
+        git.add(".");
 
         Index index = repo.createIndex();
         index.load();
@@ -98,20 +101,20 @@ public class StatusTest extends BaseTest {
     }
 
     @Nested
-    public class IndexDifference extends BaseTest {
+    public class IndexDifference {
         @BeforeEach
         public void setup() {
+            git.init();
             write("1.txt", "one");
             write("a/2.txt", "two");
             write("a/b/3.txt", "three");
-            lit.add(".");
-            lit.commit();
+            git.add(".");
+            git.commit();
         }
 
         @Test
         public void printsNothingIfNoFilesAreChanged() {
-            lit.statusPorcelain();
-            assertEquals("", lit.output());
+            validateStatus("");
         }
 
         @Test
@@ -119,65 +122,57 @@ public class StatusTest extends BaseTest {
             write("1.txt", "changed");
             write("a/2.txt", "modified");
 
-            lit.statusPorcelain();
-            assertEquals("""
-                              M 1.txt
-                              M a/2.txt
-                             """, lit.output());
+            validateStatus("""
+                                M 1.txt
+                                M a/2.txt
+                               """);
         }
 
         @Test
         public void itReportsFilesThatChangedMode() {
             makeExecutable("a/2.txt");
 
-            lit.statusPorcelain();
-
-            assertEquals("""
-                              M a/2.txt
-                             """, lit.output());
+            validateStatus("""
+                                M a/2.txt
+                               """);
         }
 
         @Test
         public void itReportsFilesWithUnchangedSize() {
             write("a/b/3.txt", "hello");
 
-            lit.statusPorcelain();
-
-            assertEquals("""
-                              M a/b/3.txt
-                             """, lit.output());
+            validateStatus("""
+                                M a/b/3.txt
+                               """);
         }
 
         @Test
         public void itDoesNotReportFilesIfOnlyTheTimestampHasChanges() {
             touch("1.txt");
 
-            lit.statusPorcelain();
-
-            assertEquals("", lit.output());
+            validateStatus("");
         }
 
         @Test
         public void itReportsDeletedFiles() {
             delete("a/2.txt");
 
-            lit.statusPorcelain();
+            Lit.LitCommand litCommand = lit.statusPorcelain();
+            Git.GitCommand gitCommand = git.statusPorcelain();
 
-            assertEquals("""
-                              D a/2.txt
-                             """, lit.output());
+            validateStatus("""
+                                D a/2.txt
+                               """);
         }
 
         @Test
         public void itReportsFilesInDeletedDirectories() {
             delete("a");
 
-            lit.statusPorcelain();
-
-            assertEquals("""
-                              D a/2.txt
-                              D a/b/3.txt
-                             """, lit.output());
+            validateStatus("""
+                                D a/2.txt
+                                D a/b/3.txt
+                               """);
         }
 
 
@@ -186,11 +181,9 @@ public class StatusTest extends BaseTest {
             write("a/4.txt", "four");
             lit.add(".");
 
-            lit.statusPorcelain();
-
-            assertEquals("""
-                             A  a/4.txt
-                             """, lit.output());
+            validateStatus("""
+                               A  a/4.txt
+                               """);
         }
 
         @Test
@@ -198,11 +191,61 @@ public class StatusTest extends BaseTest {
             write("d/e/5.txt", "five");
             lit.add(".");
 
-            lit.statusPorcelain();
+            Lit.LitCommand litCommand = lit.statusPorcelain();
+            Git.GitCommand gitCommand = git.statusPorcelain();
 
-            assertEquals("""
-                             A  d/e/5.txt
-                             """, lit.output());
+            assertEquals(gitCommand.output(), litCommand.output());
+            validateStatus("""
+                               A  d/e/5.txt
+                               """);
         }
     }
+
+    @Nested
+    public class IndexHead {
+        @Test
+        public void deletedInIndex() {
+            write("deleted");
+            git.add("deleted");
+            git.commit();
+
+            git.delete("deleted");
+
+            validateStatus("""
+                             D  deleted
+                             """);
+        }
+
+        @Test
+        public void modifiedInIndex() {
+            write("modified", "123");
+            git.add("modified");
+            git.commit();
+
+            write("modified", "456");
+            git.add(".");
+
+            validateStatus("""
+                               M  modified
+                               """);
+        }
+
+        @Test
+        public void addedInIndex() {
+            write("added");
+            git.add("added");
+
+            validateStatus("""
+                               A  added
+                               """);
+        }
+    }
+
+    private void validateStatus(String expected) {
+        Git.GitCommand gitCommand = git.statusPorcelain();
+        Lit.LitCommand litCommand = lit.statusPorcelain();
+        assertEquals(expected, litCommand.output());
+        assertEquals(gitCommand.output(), litCommand.output());
+    }
+
 }

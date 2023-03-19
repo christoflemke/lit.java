@@ -1,9 +1,11 @@
 package lemke.christof.lit.commands;
 
+import lemke.christof.lit.Database;
 import lemke.christof.lit.Index;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.Util;
 import lemke.christof.lit.model.Blob;
+import lemke.christof.lit.model.DbObject;
 import lemke.christof.lit.status.Status;
 
 import java.nio.file.Path;
@@ -31,13 +33,37 @@ public class DiffCommand implements Command {
 
     @Override
     public void run(String[] args) {
-        for(var change : status.workspaceChanges().entrySet()) {
+        if (args.length > 0 && args[0].equals("--cached")) {
+            diffHeadIndex();
+        } else {
+            diffIndexWorkspace();
+        }
+    }
+
+    private void diffHeadIndex() {
+        for (var change : status.indexChanges().entrySet()) {
             Path path = Path.of(change.getKey());
             switch (change.getValue()) {
-                case WORKSPACE_MODIFIED -> print_diff(fromIndex(path), fromFile(path));
-                case WORKSPACE_DELETED -> print_diff(fromIndex(path), fromNothing(path));
+                case INDEX_ADDED -> printDiff(fromNothing(path), fromIndex(path));
+                case INDEX_MODIFIED -> printDiff(fromHead(path), fromIndex(path));
+                // TODO: INDEX_DELETED
             }
         }
+    }
+
+    private void diffIndexWorkspace() {
+        for (var change : status.workspaceChanges().entrySet()) {
+            Path path = Path.of(change.getKey());
+            switch (change.getValue()) {
+                case WORKSPACE_MODIFIED -> printDiff(fromIndex(path), fromFile(path));
+                case WORKSPACE_DELETED -> printDiff(fromIndex(path), fromNothing(path));
+            }
+        }
+    }
+
+    private Target fromHead(Path path) {
+        Database.TreeEntry object = status.headTree().get(path);
+        return new Target(path, object.oid(), object.mode());
     }
 
     private Target fromFile(Path path) {
@@ -58,38 +84,40 @@ public class DiffCommand implements Command {
         return new Target(path, NULL_OID, null);
     }
 
-    private void print_diff(Target a, Target b) {
+    private void printDiff(Target a, Target b) {
         Path aPath = Path.of("a").resolve(a.path);
         Path bPath = Path.of("b").resolve(b.path);
-        println("diff --git "+aPath+" "+bPath);
-        print_diff_mode(a, b);
-        print_diff_content(a, b);
+        println("diff --git " + aPath + " " + bPath);
+        printDiffMode(a, b);
+        printDiffContent(a, b);
     }
 
-    private void print_diff_mode(Target a, Target b) {
-        if (b.mode == null) {
-            println("deleted file mode "+a.mode);
-        } else if (!a.mode.equals(b.mode)){
-            println("old mode "+a.mode);
-            println("new mode "+b.mode);
+    private void printDiffMode(Target a, Target b) {
+        if (a.mode == null) {
+            println("new file mode " + b.mode);
+        } else if (b.mode == null) {
+            println("deleted file mode " + a.mode);
+        } else if (!a.mode.equals(b.mode)) {
+            println("old mode " + a.mode);
+            println("new mode " + b.mode);
         }
     }
 
-    private void print_diff_content(Target a, Target b) {
-        if(a.oid.equals(b.oid)) {
+    private void printDiffContent(Target a, Target b) {
+        if (a.oid.equals(b.oid)) {
             return;
         }
-        String oidRange = "index "+shorten(a.oid) + ".." + shorten(b.oid);
-        if (a.mode.equals(b.mode)) {
+        String oidRange = "index " + shorten(a.oid) + ".." + shorten(b.oid);
+        if (a.mode != null && a.mode.equals(b.mode)) {
             oidRange += " " + a.mode;
         }
         println(oidRange);
-        println("--- "+a.diffPath());
-        println("+++ "+b.diffPath());
+        println("--- " + a.diffPath());
+        println("+++ " + b.diffPath());
     }
 
     private String shorten(String aOid) {
-        return aOid.substring(0, 6);
+        return aOid.substring(0, 7);
     }
 
     private void println(Object o) {

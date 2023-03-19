@@ -7,19 +7,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BaseTest {
-    protected Repository repo;
-    protected Lit lit;
+    protected final Lit lit;
+    protected final Git git;
+    private final Path root;
+    protected final Repository repo;
 
     {
-        final Path root;
         try {
             root = Files.createTempDirectory("test-");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         lit = new Lit(root);
-        this.repo = lit.repo();
         lit.init(root.toString());
+        git = new Git(root);
+        this.repo = Repository.create(root);
     }
 
     protected void write(String path) {
@@ -28,7 +30,7 @@ public class BaseTest {
 
     protected void write(String path, String data) {
         try {
-            Path fooPath = repo.ws().resolve(path);
+            Path fooPath = root.resolve(path);
             Files.createDirectories(fooPath.getParent());
             Files.writeString(fooPath, data);
         } catch (IOException e) {
@@ -41,7 +43,7 @@ public class BaseTest {
         if (path.isAbsolute()) {
             throw new RuntimeException("Expected relative path: " + relativePath);
         }
-        return repo.ws().resolve(path).toFile();
+        return root.resolve(path).toFile();
     }
 
     protected void makeExecutable(String path) {

@@ -14,16 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WorkspaceTest {
     @Test
-    public void testListFiles() throws IOException {
-        Path tmpDir = Files.createTempDirectory("test");
-        Files.createFile(tmpDir.resolve("foo.txt"));
-        assertEquals(
-                List.of(Path.of("foo.txt")),
-                new Workspace(tmpDir).listFiles().toList()
-        );
-    }
-
-    @Test
     public void testListFilesRecursive() throws IOException {
         Path root = Files.createTempDirectory("test");
         Path fooPath = root.resolve("foo.txt");

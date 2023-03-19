@@ -45,30 +45,20 @@ public record Workspace(Path root) {
         return root.resolve(relativePath);
     }
 
-    record FileTree(Path path, List<FileTree> children) {
-        public String print(int indent) {
-            String result = "";
-            for (int i = 0; i < indent; i++) {
-                result += " ";
-            }
-            result += path + "\n";
-            for (FileTree c : children) {
-                result += c.print(indent + 2);
-            }
-            return result;
-        }
-
-        public boolean isDir() {
-            return !children.isEmpty();
-        }
+    public Stream<Path> listFiles() {
+        return listFilesRecursive(root).map(f -> root.relativize(f)).sorted();
     }
 
-    public Stream<Path> listFiles() {
+    public Stream<Path> listFilesRecursive(Path root) {
         try {
             return Files.list(root)
-                .filter(p -> !Files.isDirectory(p))
-                .map(f -> root.relativize(f))
-                .sorted();
+                .flatMap(f -> {
+                   if (f.toFile().isDirectory()) {
+                       return listFilesRecursive(f);
+                   } else {
+                       return Stream.of(f);
+                   }
+                });
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

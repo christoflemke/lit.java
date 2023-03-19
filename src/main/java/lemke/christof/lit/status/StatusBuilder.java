@@ -1,9 +1,10 @@
 package lemke.christof.lit.status;
 
+import com.google.common.collect.Sets;
+import lemke.christof.lit.Database;
 import lemke.christof.lit.Index;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.model.Commit;
-import lemke.christof.lit.model.DbObject;
 import lemke.christof.lit.model.FileStat;
 
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class StatusBuilder {
     private EnumSet<ModifiedStatus> workspaceStatuses = EnumSet.of(
@@ -20,7 +22,8 @@ public class StatusBuilder {
     );
     private EnumSet<ModifiedStatus> indexStatuses = EnumSet.of(
         ModifiedStatus.INDEX_ADDED,
-        ModifiedStatus.INDEX_MODIFIED
+        ModifiedStatus.INDEX_MODIFIED,
+        ModifiedStatus.INDEX_DELETED
     );
     private final SortedSet<String> changed = new TreeSet<>();
     private final SortedMap<String, ModifiedStatus> indexChanges = new TreeMap<>();
@@ -36,24 +39,61 @@ public class StatusBuilder {
 
     public Status computeChanges() {
         repo.ws().walkFileTree(new StatusBuilder.ModificationVisitor());
-        computeChangesFromIndex();
-        return new Status(changed, indexChanges, workspaceChanges, untrackedFiles);
+        Map<Path, Database.TreeEntry> headTree = compareIndexHead();
+        compareIndexWS();
+        return new Status(changed, indexChanges, workspaceChanges, untrackedFiles, headTree);
     }
 
-    private void computeChangesFromIndex() {
-        Map<Path, DbObject> headTree = loadHeadTree();
+    private void compareIndexWS() {
+        Set<Path> indexPaths = idx.entries().stream().map(e -> e.path()).collect(Collectors.toSet());
+        Set<Path> wsFiles = repo.ws().listFiles().collect(Collectors.toSet());
 
-        for (Index.Entry entry : idx.entries()) {
-            Path path = entry.path();
-            if (!repo.ws().resolve(path).toFile().exists()) {
-                addStatus(path.toString(), ModifiedStatus.WORKSPACE_DELETED);
-            }
-            if (headTree.containsKey(path)) {
-                DbObject dbObject = headTree.get(path);
-            } else {
-                addStatus(path.toString(), ModifiedStatus.INDEX_ADDED);
+        Sets.SetView<Path> inIndexButNotInWS = Sets.difference(indexPaths, wsFiles);
+        for(var p : inIndexButNotInWS) {
+            addStatus(p.toString(), ModifiedStatus.WORKSPACE_DELETED);
+        }
+    }
+
+    private Map<Path, Database.TreeEntry> compareIndexHead() {
+        Map<Path, Database.TreeEntry> headTree = loadHeadTree();
+        Set<Path> indexPaths = idx.entries().stream().map(e -> e.path()).collect(Collectors.toSet());
+        Set<Path> headPaths = headTree.keySet();
+
+        Sets.SetView<Path> inHeadButNotInIndex = Sets.difference(headPaths, indexPaths);
+        for(var p : inHeadButNotInIndex) {
+            addStatus(p.toString(), ModifiedStatus.INDEX_DELETED);
+        }
+
+        Sets.SetView<Path> inIndexButNotInHead = Sets.difference(indexPaths, headPaths);
+        for(var p : inIndexButNotInHead) {
+            addStatus(p.toString(), ModifiedStatus.INDEX_ADDED);
+        }
+
+        Sets.SetView<Path> intersection = Sets.intersection(indexPaths, headPaths);
+        for (var p : intersection) {
+            Database.TreeEntry dbObject = headTree.get(p);
+            Index.Entry entry = idx.get(p).get();
+            if (!dbObject.oid().equals(entry.oid())) {
+                addStatus(p.toString(), ModifiedStatus.INDEX_MODIFIED);
             }
         }
+
+//        // TODO
+//        for (Index.Entry entry : idx.entries()) {
+//            Path path = entry.path();
+//            if (!repo.ws().resolve(path).toFile().exists()) {
+//                addStatus(path.toString(), ModifiedStatus.WORKSPACE_DELETED);
+//            }
+//            if (headTree.containsKey(path)) {
+//                Database.TreeEntry dbObject = headTree.get(path);
+//                if(!dbObject.oid().equals(entry.oid())) {
+//                    addStatus(path.toString(), ModifiedStatus.INDEX_MODIFIED);
+//                }
+//            } else {
+//                addStatus(path.toString(), ModifiedStatus.INDEX_ADDED);
+//            }
+//        }
+        return headTree;
     }
 
     private void addStatus(String path, ModifiedStatus status) {
@@ -69,13 +109,13 @@ public class StatusBuilder {
         }
     }
 
-    private Map<Path, DbObject> loadHeadTree() {
+    private Map<Path, Database.TreeEntry> loadHeadTree() {
         String head = this.repo.refs().readHead();
         if (head == null) {
             return Map.of();
         }
         Commit commit = (Commit) repo.db().read(head);
-        return repo.db().readTree(commit.treeOid(), Path.of(""));
+        return repo.db().readTree(commit, Path.of(""), null);
     }
 
     private class ModificationVisitor extends SimpleFileVisitor<Path> {

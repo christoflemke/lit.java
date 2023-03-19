@@ -5,10 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HexFormat;
@@ -55,7 +52,7 @@ public class CompareRepos {
     }
 
     @Test
-    public void comparePorcelainOutput() throws Exception {
+    public void comparePorcelainOutput() {
         Path repoPath = TestUtil.projectRoot().resolve("testdata").resolve("status-repo");
 
         Git.GitCommand statusCommand = new Git(repoPath).statusPorcelain();
@@ -63,13 +60,13 @@ public class CompareRepos {
         assertEquals(0, statusCommand.exitCode());
 
         Lit lit = new Lit(repoPath);
-        lit.statusPorcelain();
+        Lit.LitCommand litCommand = lit.statusPorcelain();
 
-        assertEquals(statusCommand.output(), lit.output());
+        assertEquals(statusCommand.output(), litCommand.output());
     }
 
     @Test
-    public void compareLongOutput() throws Exception {
+    public void compareLongOutput() {
         Path repoPath = TestUtil.projectRoot().resolve("testdata").resolve("status-repo");
 
         Git git = new Git(repoPath);
@@ -77,8 +74,8 @@ public class CompareRepos {
         assertEquals(0, statusCommand.exitCode());
 
         Lit lit = new Lit(repoPath);
-        lit.statusLong();
+        Lit.LitCommand litCommand = lit.statusLong();
 
-        assertEquals(statusCommand.output(), lit.output());
+        assertEquals(statusCommand.output(), litCommand.output());
     }
 }

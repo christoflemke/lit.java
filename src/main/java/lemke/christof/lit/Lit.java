@@ -11,60 +11,86 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Lit {
-    public static final String[] NO_ARGS = {};
-    private final Repository repo;
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ByteArrayOutputStream err = new ByteArrayOutputStream();
-    Map<String, String> envMap = new HashMap<>();
-    {
-        envMap.put("GIT_AUTHOR_NAME", "Christof Lemke");
-        envMap.put("GIT_COMMITTER_NAME", "Christof Lemke");
-        envMap.put("GIT_AUTHOR_EMAIL", "doesnotexist@gmail.com");
-    }
+    private final Path root;
 
     public Lit(Path root) {
-        byte[] inputBytes = "commit message".getBytes();
-        IO io = IO.createDefault()
-            .withIn(new ByteArrayInputStream(inputBytes))
-            .withOut(new PrintStream(out))
-            .withErr(new PrintStream(err));
-        repo = Repository.create(root)
-            .withEnv(key -> envMap.get(key))
-            .withIO(io);
+        this.root = root;
     }
 
-    public void add(String... files) {
-        new AddCommand(repo).run(files);
+    public LitCommand add(String... files) {
+        return new LitCommand(repo -> new AddCommand(repo)).run(files);
     }
 
-    public void commit() {
-        new CommitCommand(repo).run(NO_ARGS);
+    public LitCommand commit() {
+        return new LitCommand(repo -> new CommitCommand(repo)).run();
     }
 
-    public void init(String... args) {
-        new InitCommand().run(args);
+    public LitCommand init(String... args) {
+        return new LitCommand(repo -> new InitCommand()).run(args);
     }
 
-    public void statusPorcelain() {
-        new StatusCommand(repo, false).run(new String[] {"--porcelain"});
+    public LitCommand statusPorcelain() {
+        return new LitCommand(repo -> new StatusCommand(repo, false)).run("--porcelain");
     }
 
-    public void statusLong() {
-        new StatusCommand(repo, false).run(new String[] {});
+    public LitCommand statusLong() {
+        return new LitCommand(repo -> new StatusCommand(repo, false)).run();
     }
-    public void statusLongColor() {
-        new StatusCommand(repo, true).run(new String[] {});
-    }
-
-    public Repository repo() {
-        return this.repo;
+    public LitCommand statusLongColor() {
+        return new LitCommand(repo -> new StatusCommand(repo, true)).run();
     }
 
-    public String output() {
-        return this.out.toString(StandardCharsets.UTF_8);
+    public LitCommand diff() {
+        return new LitCommand(repo -> new DiffCommand(repo)).run();
     }
 
-    public void diff() {
-        new DiffCommand(repo).run(new String[] {});
+    public LitCommand diffCached() {
+        return new LitCommand((repository) -> new DiffCommand(repository)).run("--cached");
+    }
+
+    public LitCommand showHead() {
+        return new LitCommand(repo -> new ShowHeadCommand(repo)).run();
+    }
+
+    public LitCommand listHead() {
+        return new LitCommand(repo -> new ListHeadCommand(repo)).run();
+    }
+
+    private interface CreateFn {
+        Command create(Repository repo);
+    }
+
+    public class LitCommand {
+        private final Command command;
+        private final Repository repo;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        Map<String, String> envMap = new HashMap<>();
+        {
+            envMap.put("GIT_AUTHOR_NAME", "Christof Lemke");
+            envMap.put("GIT_COMMITTER_NAME", "Christof Lemke");
+            envMap.put("GIT_AUTHOR_EMAIL", "doesnotexist@gmail.com");
+        }
+
+        public LitCommand(CreateFn create) {
+            byte[] inputBytes = "commit message".getBytes();
+            IO io = IO.createDefault()
+                .withIn(new ByteArrayInputStream(inputBytes))
+                .withOut(new PrintStream(out))
+                .withErr(new PrintStream(err));
+            repo = Repository.create(root)
+                .withEnv(key -> envMap.get(key))
+                .withIO(io);
+            this.command = create.create(repo);
+        }
+
+        public LitCommand run(String... args) {
+            command.run(args);
+            return this;
+        }
+
+        public String output() {
+            return this.out.toString(StandardCharsets.UTF_8);
+        }
     }
 }

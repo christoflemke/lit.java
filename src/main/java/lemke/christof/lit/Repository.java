@@ -25,9 +25,10 @@ public record Repository(Workspace ws, Database db, Refs refs, Environment env, 
 
     public Status status() {
         Index idx = createIndex();
-        StatusBuilder builder = new StatusBuilder(this, idx);
+
         return idx.withLock(() -> {
             idx.load();
+            StatusBuilder builder = new StatusBuilder(this, idx);
             Status status = builder.computeChanges();
             idx.commit();
             return status;

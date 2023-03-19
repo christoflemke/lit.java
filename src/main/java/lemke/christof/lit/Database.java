@@ -3,13 +3,12 @@ package lemke.christof.lit;
 import lemke.christof.lit.model.*;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.Inflater;
@@ -24,6 +23,9 @@ public record Database(Path root) {
         try {
             String oid = o.oid();
             Path filePath = objectPath(oid);
+            if(filePath.toFile().exists()) {
+                return;
+            }
             Files.createDirectories(filePath.getParent());
             Files.write(filePath, o.compressedData());
         } catch (IOException e) {
@@ -64,16 +66,22 @@ public record Database(Path root) {
         return dirPath.resolve(oid.substring(2));
     }
 
-    public Map<Path, DbObject> readTree(String oid, Path path) {
-        DbObject o = read(oid);
-        if (o instanceof Blob) {
-            return Map.of(path, o);
+    public record TreeEntry(Path path, String oid, String mode) {}
+
+    public Map<Path, TreeEntry> readTree(DbObject parent, Path path, String mode) {
+        if (parent instanceof Commit) {
+            String treeOid = ((Commit) parent).treeOid();
+            Tree tree = (Tree) read(treeOid);
+            return readTree(tree, path, mode);
         }
-        Tree tree = (Tree) o;
-        Map<Path, DbObject> result = new HashMap<>();
+        if (parent instanceof Blob) {
+            return Map.of(path, new TreeEntry(path, parent.oid(), mode));
+        }
+        Tree tree = (Tree) parent;
+        Map<Path, TreeEntry> result = new HashMap<>();
         for (Entry e : tree.entries()) {
             Path entryPath = path.resolve(e.relativePath());
-            result.putAll(readTree(e.oid(), entryPath));
+            result.putAll(readTree(read(e.oid()), entryPath, e.mode()));
         }
         return result;
     }

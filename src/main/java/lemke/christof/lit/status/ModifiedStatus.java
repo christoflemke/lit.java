@@ -8,7 +8,8 @@ public enum ModifiedStatus {
     INDEX_ADDED("A", "new file"),
     INDEX_MODIFIED("M", "modified"),
     MIXED("_", "_"),
-    NO_STATUS(" ", " ");
+    NO_STATUS(" ", " "),
+    INDEX_DELETED("D", "deleted");
 
     public final String shortStatus;
     public final String longStatus;

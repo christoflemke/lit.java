@@ -1,21 +1,21 @@
-package lemke.christof.lit;
+package lemke.christof.lit.diff;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class Meyers {
-    private final String[] left;
-    private final String[] right;
+    private final List<Line> left;
+    private final List<Line> right;
     private final int leftSize;
     private final int rightSize;
     private final int maxSize;
 
-    public Meyers(String[] left, String[] right) {
+    public Meyers(List<Line> left, List<Line> right) {
         this.left = left;
         this.right = right;
-        leftSize = left.length;
-        rightSize = right.length;
+        leftSize = left.size();
+        rightSize = right.size();
         maxSize = Math.max(leftSize, rightSize);
     }
 
@@ -24,14 +24,14 @@ public class Meyers {
         List<Edit> diff = new ArrayList<>();
         for(var move : backtrack) {
             System.out.println(move);
-            String aLine = move.prevX >= leftSize ? null : left[move.prevX];
-            String bLine = move.prevY >= rightSize ? null : right[move.prevY];
+            Line aLine = move.prevX >= leftSize ? null : left.get(move.prevX);
+            Line bLine = move.prevY >= rightSize ? null : right.get(move.prevY);
             if (move.x == move.prevX) {
-                diff.add(new Edit(EditSymbol.INS, bLine));
+                diff.add(new Edit(EditSymbol.INS, null, bLine));
             } else if (move.y == move.prevY) {
-                diff.add(new Edit(EditSymbol.DEL, aLine));
+                diff.add(new Edit(EditSymbol.DEL, aLine, null));
             } else {
-                diff.add(new Edit(EditSymbol.EQL, aLine));
+                diff.add(new Edit(EditSymbol.EQL, aLine, bLine));
             }
         }
         Collections.reverse(diff);
@@ -58,25 +58,25 @@ public class Meyers {
         Integer[] v = new Integer[maxSize * 2 + 1];
         v[1] = 0;
         List<Integer[]> trace = new ArrayList<>();
-        for(int d  = 0; d <= maxSize; d++) {
+        for(int depth  = 0; depth <= maxSize; depth++) {
             trace.add(v.clone());
-            for (int k = -d; k <= d; k += 2) {
+            for (int k = -depth; k <= depth; k += 2) {
                 int x;
                 Integer vkMinus = accessArray(v, k - 1);
                 Integer vkPlus = accessArray(v, k + 1);
-                if (k == -d || (k != d && vkMinus < vkPlus))
+                if (k == -depth || (k != depth && vkMinus < vkPlus))
                 {
                     x = vkPlus;
                 } else {
                     x = vkMinus + 1;
                 }
                 int y = x - k;
-                while (x < leftSize && y < rightSize && left[x].equals(right[y])) {
+                while (x < leftSize && y < rightSize && left.get(x).text().equals(right.get(y).text())) {
                     x = x + 1;
                     y = y + 1;
                 }
                 assignArray(v, k, x);
-                //System.out.println("d: "+d+", k: "+k+", x: "+x+", y: "+y);
+                //System.out.println("depth: "+depth+", k: "+k+", x: "+x+", y: "+y);
                 if (x >= leftSize && y >= rightSize) {
                     return trace;
                 }
@@ -109,13 +109,6 @@ public class Meyers {
         }
     }
 
-    record Edit(EditSymbol sym, String text) {
-        @Override
-        public String toString() {
-            return sym + text;
-        }
-    }
-
 
     public List<Move> backtrack() {
         int x = leftSize;
@@ -127,7 +120,7 @@ public class Meyers {
             int k = x - y;
             //System.out.println("d: "+d+", k: "+k);
             int prevK = 0;
-            if ((k == -d) || (k != d && v[k - 1] < v[k + 1])) {
+            if ((k == -d) || (k != d && accessArray(v,k - 1) < accessArray(v, k + 1))) {
                 prevK = k + 1;
             } else {
                 prevK = k -1;

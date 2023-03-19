@@ -1,20 +1,21 @@
 package lemke.christof.lit.commands;
 
-import lemke.christof.lit.Database;
-import lemke.christof.lit.Index;
-import lemke.christof.lit.Repository;
-import lemke.christof.lit.Util;
+import lemke.christof.lit.*;
+import lemke.christof.lit.diff.Diff;
+import lemke.christof.lit.diff.Edit;
+import lemke.christof.lit.diff.Hunk;
 import lemke.christof.lit.model.Blob;
 import lemke.christof.lit.model.DbObject;
 import lemke.christof.lit.status.Status;
 
 import java.nio.file.Path;
+import java.util.List;
 
 public class DiffCommand implements Command {
 
-    private record Target(Path path, String oid, String mode) {
-        String diffPath() {
-            return mode == null ? NULL_PATH : path.toString();
+    private record Target(Path path, String oid, String mode, String data) {
+        String diffPath(String a) {
+            return mode == null ? NULL_PATH : Path.of(a).resolve(path).toString();
         }
     }
 
@@ -63,25 +64,28 @@ public class DiffCommand implements Command {
 
     private Target fromHead(Path path) {
         Database.TreeEntry object = status.headTree().get(path);
-        return new Target(path, object.oid(), object.mode());
+        Blob blob = (Blob) repo.db().read(object.oid());
+        return new Target(path, object.oid(), object.mode(), blob.stringData());
     }
 
     private Target fromFile(Path path) {
-        Blob blob = Blob.fromString(repo.ws().readString(path));
+        String data = repo.ws().readString(path);
+        Blob blob = Blob.fromString(data);
         String oid = blob.oid();
         String mode = repo.ws().stat(path).modeString();
-        return new Target(path, oid, mode);
+        return new Target(path, oid, mode, data);
     }
 
     private Target fromIndex(Path path) {
         Index.Entry entry = idx.get(path).get();
         String oid = entry.oid();
         String mode = entry.stat().modeString();
-        return new Target(path, oid, mode);
+        Blob blob = (Blob) repo.db().read(oid);
+        return new Target(path, oid, mode, blob.stringData());
     }
 
     private Target fromNothing(Path path) {
-        return new Target(path, NULL_OID, null);
+        return new Target(path, NULL_OID, null, "");
     }
 
     private void printDiff(Target a, Target b) {
@@ -112,8 +116,16 @@ public class DiffCommand implements Command {
             oidRange += " " + a.mode;
         }
         println(oidRange);
-        println("--- " + a.diffPath());
-        println("+++ " + b.diffPath());
+        println("--- " + a.diffPath("a"));
+        println("+++ " + b.diffPath("b"));
+
+        List<Hunk> hunks = Diff.diffHunks(a.data, b.data);
+        hunks.forEach(this::printDiffHunk);
+    }
+
+    private void printDiffHunk(Hunk hunk) {
+        println(hunk.header());
+        hunk.edits().forEach(this::println);
     }
 
     private String shorten(String aOid) {

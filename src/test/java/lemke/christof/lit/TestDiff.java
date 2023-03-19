@@ -1,19 +1,54 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.diff.Diff;
+import lemke.christof.lit.diff.Edit;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestDiff {
 
     @Test
-    public void test() {
-        String[] a = "ABCABBA".split("");
-        String[] b = "CBABAC".split("");
+    public void addLine() {
+        List<Edit> diff = Diff.diff("", "a");
+        assertEquals("+a", editsToString(diff));
+    }
 
-        Meyers meyers = new Meyers(a, b);
-        List<Meyers.Edit> diff = meyers.diff();
+    @Test void removeLine() {
+        List<Edit> diff = Diff.diff("a", "");
+        assertEquals("-a", editsToString(diff));
+    }
+
+    @Test
+    public void test() {
+        String a = """
+            A
+            B
+            C
+            A
+            B
+            B
+            A
+            """;
+        String b = """
+            C
+            B
+            A
+            B
+            A
+            C
+            """;
+
+        List<Edit> diff = Diff.diff(a, b);
         System.out.println(diff);
+        String editString = editsToString(diff);
+        assertEquals("-A -B  C +B  A  B -B  A +C", editString);
+    }
+
+    private static String editsToString(List<Edit> diff) {
+        return diff.stream().map(e -> e.toString()).collect(Collectors.joining(" "));
     }
 
 }

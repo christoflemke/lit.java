@@ -25,4 +25,8 @@ public record Blob (byte[] data) implements DbObject {
         }
         return false;
     }
+
+    public String stringData() {
+        return new String(data, StandardCharsets.UTF_8);
+    }
 }

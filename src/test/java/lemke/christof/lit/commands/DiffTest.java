@@ -59,25 +59,28 @@ public class DiffTest extends BaseTest {
     class HeadIndex {
         @Test
         public void diffModified() {
-            write("modified", "123");
-            lit.add("modified");
-            lit.commit();
-            write("modified", "456");
-            lit.add("modified");
+            write("modified", "abc\n123\n1\n");
+            git.add("modified");
+            git.commit();
+            write("modified", "abc\n456\n1\n");
+            git.add("modified");
 
-            Lit.LitCommand litCommand = lit.diffCached();
-
-            assertEquals("""
-                             diff --git a/modified b/modified
-                             index d80088..ee2b83 100644
-                             --- modified
-                             +++ modified
-                             """, litCommand.output());
+            validateDiffCached("""
+                                   diff --git a/modified b/modified
+                                   index 6d123cb..054b7f5 100644
+                                   --- a/modified
+                                   +++ b/modified
+                                   @@ -1,3 +1,3 @@
+                                    abc
+                                   -123
+                                   +456
+                                    1
+                                   """);
         }
 
         @Test
         public void diffAdded() {
-            write("added", "123");
+            write("added", "123\n456");
             lit.add("added");
 
             Lit.LitCommand litCommand = lit.diffCached();
@@ -90,12 +93,12 @@ public class DiffTest extends BaseTest {
 //                             +++ added
 //                               """, litCommand.output());
             validateDiffCached("""
-                             diff --git a/added b/added
-                             new file mode 100644
-                             index 000000..d80088
-                             --- /dev/null
-                             +++ added
-                               """);
+                                   diff --git a/added b/added
+                                   new file mode 100644
+                                   index 000000..d80088
+                                   --- /dev/null
+                                   +++ added
+                                     """);
         }
     }
 

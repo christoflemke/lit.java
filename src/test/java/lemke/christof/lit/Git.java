@@ -44,6 +44,14 @@ public class Git {
         return new GitCommand("git", "diff", "--cached").run();
     }
 
+    public GitCommand rm(String file) {
+        return new GitCommand("git", "rm", file).run();
+    }
+
+    public GitCommand diff() {
+        return new GitCommand("git", "diff").run();
+    }
+
     public class GitCommand {
         private final String[] args;
         private int exitCode;

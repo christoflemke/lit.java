@@ -1,24 +1,27 @@
 package lemke.christof.lit.diff;
 
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public record Hunk(int aStart, int bStart, List<Edit> edits) {
     private static int HUNK_CONTEXT = 3;
 
     public static List<Hunk> filter(List<Edit> edits) {
-        List<Hunk> hunks = new ArrayList<>();
-        List<List<Integer>> editPositions = new ArrayList<>();
+        RangeSet<Integer> editPositions = TreeRangeSet.create();
         int editStart = -1;
+        // group by edit positions
         for(int i = 0; i < edits.size(); i++) {
             Edit edit = edits.get(i);
             if(edit.sym() == Meyers.EditSymbol.EQL) {
-                if(editStart > 0) {
-                    editPositions.add(List.of(editStart, i-1));
+                if(editStart >= 0) {
+                    editPositions.add(range(editStart, i, edits.size()));
                     editStart = -1;
                 }
                 continue;
@@ -27,22 +30,32 @@ public record Hunk(int aStart, int bStart, List<Edit> edits) {
                 editStart = i;
             }
         }
-        // TODO: handle cases where we don't end with EQL
+        if (editStart != -1) {
+            editPositions.add(range(editStart, edits.size(), edits.size()));
+        }
 
-        for(var positions : editPositions) {
-            hunks.add(toHunk(edits, positions.get(0), positions.get(1)));
+        List<Hunk> hunks = new ArrayList<>();
+        for(var positions : editPositions.asRanges()) {
+            hunks.add(toHunk(edits, positions.lowerEndpoint(), positions.upperEndpoint()));
         }
 
         return hunks;
     }
 
+    private static Range<Integer> range(int editStart, int editEnd, int max) {
+        editStart = Math.max(editStart - HUNK_CONTEXT, 0);
+        editEnd = Math.min(editEnd + HUNK_CONTEXT, max);
+        return Range.closed(editStart, editEnd);
+    }
+
+
     private static Hunk toHunk(List<Edit> edits, int start, int end) {
-        start = Math.max(start - HUNK_CONTEXT, 0);
-        end = Math.min(end + HUNK_CONTEXT, edits.size());
         List<Edit> hunkEdits = edits.subList(start, end);
+        Line aLine = hunkEdits.get(0).aLine();
+        Line bLine = hunkEdits.get(0).bLine();
         return new Hunk(
-            hunkEdits.get(0).aLine().number(),
-            hunkEdits.get(0).bLine().number(),
+            aLine == null ? -1 : aLine.number(),
+            bLine == null ? -1 : bLine.number(),
             hunkEdits
         );
     }
@@ -121,5 +134,4 @@ public record Hunk(int aStart, int bStart, List<Edit> edits) {
         int start = lines.stream().findFirst().map(Line::number).orElse(def);
         return start + "," + lines.size();
     }
-
 }

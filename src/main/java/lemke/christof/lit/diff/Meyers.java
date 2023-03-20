@@ -12,17 +12,20 @@ public class Meyers {
     private final int maxSize;
 
     public Meyers(List<Line> left, List<Line> right) {
-        this.left = left;
-        this.right = right;
+        this.left = Collections.unmodifiableList(left);
+        this.right = Collections.unmodifiableList(right);
         leftSize = left.size();
         rightSize = right.size();
         maxSize = Math.max(leftSize, rightSize);
     }
 
     public List<Edit> diff() {
+        if (leftSize == 0 && rightSize == 0) {
+            return List.of();
+        }
         List<Move> backtrack = backtrack();
         List<Edit> diff = new ArrayList<>();
-        for(var move : backtrack) {
+        for (var move : backtrack) {
             System.out.println(move);
             Line aLine = move.prevX >= leftSize ? null : left.get(move.prevX);
             Line bLine = move.prevY >= rightSize ? null : right.get(move.prevY);
@@ -39,7 +42,7 @@ public class Meyers {
     }
 
     private void assignArray(Integer[] a, int i, int v) {
-        if(i < 0) {
+        if (i < 0) {
             a[a.length + i] = v;
         } else {
             a[i] = v;
@@ -47,7 +50,7 @@ public class Meyers {
     }
 
     private Integer accessArray(Integer[] a, int i) {
-        if(i < 0) {
+        if (i < 0) {
             return a[a.length + i];
         } else {
             return a[i];
@@ -58,14 +61,21 @@ public class Meyers {
         Integer[] v = new Integer[maxSize * 2 + 1];
         v[1] = 0;
         List<Integer[]> trace = new ArrayList<>();
-        for(int depth  = 0; depth <= maxSize; depth++) {
+        /*
+            The depth is the depth in the search tree
+         */
+        for (int depth = 0; depth <= maxSize; depth++) {
             trace.add(v.clone());
+            /*
+             * k = x - y
+             * where x is the position on the horizontal axis
+             * and y is the position on the vertical axis
+             */
             for (int k = -depth; k <= depth; k += 2) {
-                int x;
                 Integer vkMinus = accessArray(v, k - 1);
                 Integer vkPlus = accessArray(v, k + 1);
-                if (k == -depth || (k != depth && vkMinus < vkPlus))
-                {
+                int x;
+                if (k == -depth || (k != depth && vkMinus < vkPlus)) {
                     x = vkPlus;
                 } else {
                     x = vkMinus + 1;
@@ -88,7 +98,7 @@ public class Meyers {
     record Move(int prevX, int prevY, int x, int y) {
         @Override
         public String toString() {
-            return "("+prevX+","+prevY+") -> ("+x+","+y+")";
+            return "(" + prevX + "," + prevY + ") -> (" + x + "," + y + ")";
         }
     }
 
@@ -115,26 +125,28 @@ public class Meyers {
         int y = rightSize;
         List<Integer[]> shortestEdit = shortestEdit();
         List<Move> moves = new ArrayList<>();
-        for (int d = shortestEdit.size() - 1; d >= 0 ; d--) {
+        for (int d = shortestEdit.size() - 1; d >= 0; d--) {
             Integer[] v = shortestEdit.get(d);
             int k = x - y;
             //System.out.println("d: "+d+", k: "+k);
             int prevK = 0;
-            if ((k == -d) || (k != d && accessArray(v,k - 1) < accessArray(v, k + 1))) {
+            if ((k == -d) || (k != d && accessArray(v, k - 1) < accessArray(v, k + 1))) {
                 prevK = k + 1;
             } else {
-                prevK = k -1;
+                prevK = k - 1;
             }
             int prevX = v[prevK];
             int prevY = prevX - prevK;
             while (x > prevX && y > prevY) {
                 moves.add(new Move(x - 1, y - 1, x, y));
-                x--;y--;
+                x--;
+                y--;
             }
             if (d > 0) {
                 moves.add(new Move(prevX, prevY, x, y));
             }
-            x = prevX; y = prevY;
+            x = prevX;
+            y = prevY;
         }
         return moves;
     }

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestDiff {
@@ -16,9 +17,21 @@ public class TestDiff {
         assertEquals("+a", editsToString(diff));
     }
 
-    @Test void removeLine() {
+    @Test
+    void removeLine() {
         List<Edit> diff = Diff.diff("a", "");
         assertEquals("-a", editsToString(diff));
+    }
+
+    @Test
+    void noDiff() {
+        List<Edit> diff = Diff.diff("a", "a");
+        assertEquals(" a", editsToString(diff));
+    }
+
+    @Test void diffEmpty() {
+//        List<Edit> diff = Diff.diff("", "");
+//        assertEquals("", editsToString(diff));
     }
 
     @Test
@@ -43,12 +56,21 @@ public class TestDiff {
 
         List<Edit> diff = Diff.diff(a, b);
         System.out.println(diff);
-        String editString = editsToString(diff);
-        assertEquals("-A -B  C +B  A  B -B  A +C", editString);
+        assertEquals("""
+                         -A
+                         -B
+                          C
+                         +B
+                          A
+                          B
+                         -B
+                          A
+                         +C
+                         """, editsToString(diff));
     }
 
     private static String editsToString(List<Edit> diff) {
-        return diff.stream().map(e -> e.toString()).collect(Collectors.joining(" "));
+        return diff.stream().map(e -> e.toString()).collect(Collectors.joining(""));
     }
 
 }

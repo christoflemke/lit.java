@@ -13,13 +13,11 @@ public class Diff {
     This is a bit complicated since I have to mimic ruby's String:lines exactly (include \n in string)
      */
     private static List<Line> lines(String document) {
-        Scanner scanner = new Scanner(document);
-        scanner.useDelimiter("\n");
         String line = "";
         int lineNumber = 1;
         List<Line> result = new ArrayList<>();
-        while (scanner.hasNext()) {
-            String next = scanner.next();
+        for(int i = 0; i < document.length(); i++) {
+            String next = document.substring(i,i+1);
             line += next;
             if(next.equals("\n")) {
                 result.add(new Line(lineNumber, line));
@@ -45,4 +43,5 @@ public class Diff {
     public static List<Hunk> diffHunks(String a, String b) {
         return Hunk.filter(diff(a, b));
     }
+
 }

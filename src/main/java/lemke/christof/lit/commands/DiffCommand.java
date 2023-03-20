@@ -125,7 +125,7 @@ public class DiffCommand implements Command {
 
     private void printDiffHunk(Hunk hunk) {
         println(hunk.header());
-        hunk.edits().forEach(this::println);
+        hunk.edits().forEach(this::print);
     }
 
     private String shorten(String aOid) {
@@ -134,5 +134,9 @@ public class DiffCommand implements Command {
 
     private void println(Object o) {
         repo.io().out().println(o);
+    }
+
+    private void print(Object o) {
+        repo.io().out().print(o);
     }
 }

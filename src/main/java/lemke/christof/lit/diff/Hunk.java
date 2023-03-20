@@ -15,23 +15,23 @@ public record Hunk(int aStart, int bStart, List<Edit> edits) {
 
     public static List<Hunk> filter(List<Edit> edits) {
         RangeSet<Integer> editPositions = TreeRangeSet.create();
-        int editStart = -1;
+        Range<Integer> current = null;
         // group by edit positions
         for(int i = 0; i < edits.size(); i++) {
             Edit edit = edits.get(i);
             if(edit.sym() == Meyers.EditSymbol.EQL) {
-                if(editStart >= 0) {
-                    editPositions.add(range(editStart, i, edits.size()));
-                    editStart = -1;
+                if(current != null) {
+                    editPositions.add(range(current.lowerEndpoint(), i, edits.size()));
+                    current = null;
                 }
                 continue;
             }
-            if (editStart == -1) {
-                editStart = i;
+            if (current == null) {
+                current = Range.atLeast(i);
             }
         }
-        if (editStart != -1) {
-            editPositions.add(range(editStart, edits.size(), edits.size()));
+        if (current != null) {
+            editPositions.add(range(current.lowerEndpoint(), edits.size(), edits.size()));
         }
 
         List<Hunk> hunks = new ArrayList<>();
@@ -54,69 +54,11 @@ public record Hunk(int aStart, int bStart, List<Edit> edits) {
         Line aLine = hunkEdits.get(0).aLine();
         Line bLine = hunkEdits.get(0).bLine();
         return new Hunk(
-            aLine == null ? -1 : aLine.number(),
-            bLine == null ? -1 : bLine.number(),
+            aLine == null ? 0 : aLine.number(),
+            bLine == null ? 0 : bLine.number(),
             hunkEdits
         );
     }
-
-//    public static List<Hunk> filter(List<Edit> edits) {
-//        List<Hunk> hunks = new ArrayList<>();
-//        int offset = 0;
-//
-//        while (true) {
-//            // Skip EQL edits
-//            while (offset < edits.size() && edits.get(offset).sym() == Meyers.EditSymbol.EQL) {
-//                offset++;
-//            }
-//            // return if at the end
-//            if (offset >= edits.size()) {
-//                return hunks;
-//            }
-//
-//            // reverse a few steps to include the context
-//            offset -= HUNK_CONTEXT + 1;
-//
-//            // get the line numbers
-//            int aStart = offset < 0 ? 0 : edits.get(offset).aLine().number();
-//            int bStart = offset < 0 ? 0 : edits.get(offset).bLine().number();
-//
-//            hunks.add(new Hunk(aStart, bStart, new ArrayList<>()));
-//            offset = Hunk.build(new Hunk(aStart, bStart, new ArrayList<>()), edits, offset);
-//        }
-//    }
-//
-//    private static int build(Hunk hunk, List<Edit> edits, int offset) {
-//        int counter = -1;
-//
-//        while (counter != 0) {
-//            // add current edit
-//            if (offset >= 0 && counter > 0 && offset < edits.size()) {
-//                hunk.edits.add(edits.get(offset));
-//            }
-//            // scan
-//            offset++;
-//            // break if we reached the end
-//            if (offset > edits.size()) {
-//                break;
-//            }
-//
-//            /*
-//            Before we hit the first INS/DEL, counter will just count down.
-//            While we are scanning through the INS/DELs, it will reset to 2*HUNK_CONTEXT+1.
-//            Once we are past the INS/DELs, we will start to count down to 0
-//             */
-//            int editPosition = offset + HUNK_CONTEXT;
-//            Meyers.EditSymbol sym = editPosition >= edits.size() ? null : edits.get(editPosition).sym();
-//            if (sym == Meyers.EditSymbol.INS || sym == Meyers.EditSymbol.DEL) {
-//                counter = 2 * HUNK_CONTEXT + 1;
-//            } else {
-//                counter--;
-//            }
-//        }
-//
-//        return offset;
-//    }
 
     public String header() {
         String aOffset = offsetFor(Edit::aLine, aStart);
@@ -130,8 +72,14 @@ public record Hunk(int aStart, int bStart, List<Edit> edits) {
             .map(lineSelector)
             .filter(Objects::nonNull)
             .toList();
-
+        if(lines.isEmpty()) {
+            return "0,0";
+        }
         int start = lines.stream().findFirst().map(Line::number).orElse(def);
-        return start + "," + lines.size();
+        int end = lines.size();
+        if (start == end) {
+            return Integer.toString(start);
+        }
+        return start + "," + end;
     }
 }

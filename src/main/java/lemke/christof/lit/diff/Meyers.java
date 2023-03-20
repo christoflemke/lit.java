@@ -135,7 +135,7 @@ public class Meyers {
             } else {
                 prevK = k - 1;
             }
-            int prevX = v[prevK];
+            int prevX = accessArray(v,prevK);
             int prevY = prevX - prevK;
             while (x > prevX && y > prevY) {
                 moves.add(new Move(x - 1, y - 1, x, y));

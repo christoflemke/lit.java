@@ -34,27 +34,34 @@ public class DiffTest extends BaseTest {
             validate("""
                          diff --git a/deleted b/deleted
                          deleted file mode 100644
-                         index e69de2..000000
+                         index ce01362..0000000
                          --- a/deleted
                          +++ /dev/null
+                         @@ -1 +0,0 @@
+                         -hello
                          """);
         }
 
         @Test
         public void diffModified() {
-            write("modified", "123");
+            write("modified", "abc\n123\n1\n");
             lit.add(".");
             lit.commit();
 
-            write("modified", "456");
+            write("modified", "abc\n456\n1\n");
 
             Lit.LitCommand litCommand = lit.diff();
 
             assertEquals("""
                              diff --git a/modified b/modified
-                             index d80088..ee2b83 100644
-                             --- modified
-                             +++ modified
+                             index 6d123cb..054b7f5 100644
+                             --- a/modified
+                             +++ b/modified
+                             @@ -1,3 +1,3 @@
+                              abc
+                             -123
+                             +456
+                              1
                              """, litCommand.output());
         }
 
@@ -93,16 +100,19 @@ public class DiffTest extends BaseTest {
 
         @Test
         public void diffAdded() {
-            write("added", "123\n456");
+            write("added", "123\n456\n");
             lit.add("added");
 
             validate("""
-                         diff --git a/added b/added
-                         new file mode 100644
-                         index 000000..d80088
-                         --- /dev/null
-                         +++ added
-                           """);
+                          diff --git a/added b/added
+                          new file mode 100644
+                          index 0000000..ce8c77d
+                          --- /dev/null
+                          +++ b/added
+                          @@ -0,0 +1,2 @@
+                          +123
+                          +456
+                          """);
         }
 
         void validate(String expected) {

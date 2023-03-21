@@ -23,8 +23,8 @@ public record ListHeadCommand(Repository repo) implements Command {
             Path entryPath = path.resolve(e.relativePath());
 
             DbObject child = db.read(e.oid());
-            if (child instanceof Tree) {
-                listRecursive(db, (Tree) child, entryPath);
+            if (child instanceof Tree t) {
+                listRecursive(db, t, entryPath);
             } else if (child instanceof Blob) {
                 repo.io().out().println("" + e.mode() + " " + e.oid() + " " + entryPath);
             }

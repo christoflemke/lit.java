@@ -20,8 +20,8 @@ public record Blob (byte[] data) implements DbObject {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Blob) {
-            return Arrays.equals(this.data, ((Blob) obj).data);
+        if (obj instanceof Blob blob) {
+            return Arrays.equals(this.data, blob.data);
         }
         return false;
     }

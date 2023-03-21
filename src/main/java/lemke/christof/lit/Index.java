@@ -300,8 +300,8 @@ public class Index {
 
         @Override
         public boolean equals(Object obj) {
-            if (obj instanceof Entry) {
-                return ((Entry) obj).path.equals(this.path);
+            if (obj instanceof Entry e) {
+                return e.path.equals(this.path);
             }
             return false;
         }

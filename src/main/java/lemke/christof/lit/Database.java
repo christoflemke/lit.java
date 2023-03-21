@@ -69,8 +69,8 @@ public record Database(Path root) {
     public record TreeEntry(Path path, String oid, String mode) {}
 
     public Map<Path, TreeEntry> readTree(DbObject parent, Path path, String mode) {
-        if (parent instanceof Commit) {
-            String treeOid = ((Commit) parent).treeOid();
+        if (parent instanceof Commit c) {
+            String treeOid = c.treeOid();
             Tree tree = (Tree) read(treeOid);
             return readTree(tree, path, mode);
         }

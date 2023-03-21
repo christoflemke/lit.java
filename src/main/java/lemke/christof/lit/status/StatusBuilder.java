@@ -77,22 +77,6 @@ public class StatusBuilder {
                 addStatus(p.toString(), ModifiedStatus.INDEX_MODIFIED);
             }
         }
-
-//        // TODO
-//        for (Index.Entry entry : idx.entries()) {
-//            Path path = entry.path();
-//            if (!repo.ws().resolve(path).toFile().exists()) {
-//                addStatus(path.toString(), ModifiedStatus.WORKSPACE_DELETED);
-//            }
-//            if (headTree.containsKey(path)) {
-//                Database.TreeEntry dbObject = headTree.get(path);
-//                if(!dbObject.oid().equals(entry.oid())) {
-//                    addStatus(path.toString(), ModifiedStatus.INDEX_MODIFIED);
-//                }
-//            } else {
-//                addStatus(path.toString(), ModifiedStatus.INDEX_ADDED);
-//            }
-//        }
         return headTree;
     }
 

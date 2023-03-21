@@ -24,12 +24,14 @@ public class DiffCommand implements Command {
     private final Repository repo;
     private final Status status;
     private final Index idx;
+    private final boolean useColor;
 
-    public DiffCommand(Repository repo) {
+    public DiffCommand(Repository repo, boolean useColor) {
         this.repo = repo;
         status = repo.status();
         idx = repo.createIndex();
         idx.load();
+        this.useColor = useColor;
     }
 
     @Override
@@ -91,19 +93,19 @@ public class DiffCommand implements Command {
     private void printDiff(Target a, Target b) {
         Path aPath = Path.of("a").resolve(a.path);
         Path bPath = Path.of("b").resolve(b.path);
-        println("diff --git " + aPath + " " + bPath);
+        printHeader("diff --git " + aPath + " " + bPath);
         printDiffMode(a, b);
         printDiffContent(a, b);
     }
 
     private void printDiffMode(Target a, Target b) {
         if (a.mode == null) {
-            println("new file mode " + b.mode);
+            printHeader("new file mode " + b.mode);
         } else if (b.mode == null) {
-            println("deleted file mode " + a.mode);
+            printHeader("deleted file mode " + a.mode);
         } else if (!a.mode.equals(b.mode)) {
-            println("old mode " + a.mode);
-            println("new mode " + b.mode);
+            printHeader("old mode " + a.mode);
+            printHeader("new mode " + b.mode);
         }
     }
 
@@ -115,17 +117,43 @@ public class DiffCommand implements Command {
         if (a.mode != null && a.mode.equals(b.mode)) {
             oidRange += " " + a.mode;
         }
-        println(oidRange);
-        println("--- " + a.diffPath("a"));
-        println("+++ " + b.diffPath("b"));
+        printHeader(oidRange);
+        printHeader("--- " + a.diffPath("a"));
+        printHeader("+++ " + b.diffPath("b"));
 
         List<Hunk> hunks = Diff.diffHunks(a.data, b.data);
         hunks.forEach(this::printDiffHunk);
     }
 
     private void printDiffHunk(Hunk hunk) {
-        println(hunk.header());
-        hunk.edits().forEach(this::print);
+        printColor(hunk.header(), Color.CYAN);
+        hunk.edits().forEach(this::printDiffEdit);
+    }
+
+    private void printDiffEdit(Edit e) {
+        String text = e.toString().stripTrailing();
+        switch (e.sym()) {
+            case EQL -> println(Color.justReset(text, useColor));
+            case INS -> {
+                // Gits output is a bit strange here, since it individually wraps the sign and the text in color codes.
+                if (useColor) {
+                    print(Color.GREEN.format(e.sym().toString(), true));
+                    String line = e.aLine() == null ? e.bLine().text() : e.aLine().text();
+                    println(Color.GREEN.format(line.stripTrailing(), true));
+                } else {
+                    println(text);
+                }
+            }
+            case DEL -> println(Color.RED.format(text, useColor));
+        }
+    }
+
+    private void printColor(String in, Color c) {
+        println(c.format(in, useColor));
+    }
+
+    private void printHeader(String in) {
+        println(Color.BOLD.format(in, useColor));
     }
 
     private String shorten(String aOid) {

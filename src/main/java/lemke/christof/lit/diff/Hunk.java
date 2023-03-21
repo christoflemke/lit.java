@@ -6,7 +6,6 @@ import com.google.common.collect.TreeRangeSet;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -19,7 +18,7 @@ public record Hunk(int aStart, int bStart, List<Edit> edits) {
         // group by edit positions
         for(int i = 0; i < edits.size(); i++) {
             Edit edit = edits.get(i);
-            if(edit.sym() == Meyers.EditSymbol.EQL) {
+            if(edit.sym() == EditSymbol.EQL) {
                 if(current != null) {
                     editPositions.add(range(current.lowerEndpoint(), i, edits.size()));
                     current = null;

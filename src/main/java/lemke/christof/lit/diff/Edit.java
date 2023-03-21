@@ -1,8 +1,6 @@
 package lemke.christof.lit.diff;
 
-import java.util.List;
-
-public record Edit(Meyers.EditSymbol sym, Line aLine, Line bLine) {
+public record Edit(EditSymbol sym, Line aLine, Line bLine) {
     @Override
     public String toString() {
         Line line = aLine == null ? bLine : aLine;

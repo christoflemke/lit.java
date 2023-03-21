@@ -102,24 +102,6 @@ public class Meyers {
         }
     }
 
-    enum EditSymbol {
-        EQL(" "),
-        INS("+"),
-        DEL("-");
-
-        final String text;
-
-        EditSymbol(String text) {
-            this.text = text;
-        }
-
-        @Override
-        public String toString() {
-            return text;
-        }
-    }
-
-
     public List<Move> backtrack() {
         int x = leftSize;
         int y = rightSize;

@@ -41,11 +41,15 @@ public class Lit {
     }
 
     public LitCommand diff() {
-        return new LitCommand(repo -> new DiffCommand(repo)).run();
+        return new LitCommand(repo -> new DiffCommand(repo, false)).run();
+    }
+
+    public LitCommand diffColor() {
+        return new LitCommand(repo -> new DiffCommand(repo, true)).run();
     }
 
     public LitCommand diffCached() {
-        return new LitCommand((repository) -> new DiffCommand(repository)).run("--cached");
+        return new LitCommand((repository) -> new DiffCommand(repository, false)).run("--cached");
     }
 
     public LitCommand showHead() {

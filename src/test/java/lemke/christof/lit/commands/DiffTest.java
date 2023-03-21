@@ -50,19 +50,31 @@ public class DiffTest extends BaseTest {
 
             write("modified", "abc\n456\n1\n");
 
-            Lit.LitCommand litCommand = lit.diff();
+            validate("""
+                         diff --git a/modified b/modified
+                         index 6d123cb..054b7f5 100644
+                         --- a/modified
+                         +++ b/modified
+                         @@ -1,3 +1,3 @@
+                          abc
+                         -123
+                         +456
+                          1
+                         """);
+        }
 
-            assertEquals("""
-                             diff --git a/modified b/modified
-                             index 6d123cb..054b7f5 100644
-                             --- a/modified
-                             +++ b/modified
-                             @@ -1,3 +1,3 @@
-                              abc
-                             -123
-                             +456
-                              1
-                             """, litCommand.output());
+        @Test
+        public void diffColor() {
+            write("modified", "abc\n123\n1\n");
+            lit.add(".");
+            lit.commit();
+
+            write("modified", "abc\n456\n1\n");
+
+            Lit.LitCommand litCommand = lit.diffColor();
+            Git.GitCommand gitCommand = git.diffColor();
+
+            assertEquals(gitCommand.output(), litCommand.output());
         }
 
         void validate(String expected) {
@@ -104,15 +116,15 @@ public class DiffTest extends BaseTest {
             lit.add("added");
 
             validate("""
-                          diff --git a/added b/added
-                          new file mode 100644
-                          index 0000000..ce8c77d
-                          --- /dev/null
-                          +++ b/added
-                          @@ -0,0 +1,2 @@
-                          +123
-                          +456
-                          """);
+                         diff --git a/added b/added
+                         new file mode 100644
+                         index 0000000..ce8c77d
+                         --- /dev/null
+                         +++ b/added
+                         @@ -0,0 +1,2 @@
+                         +123
+                         +456
+                         """);
         }
 
         void validate(String expected) {

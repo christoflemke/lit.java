@@ -52,6 +52,10 @@ public class Git {
         return new GitCommand("git", "diff").run();
     }
 
+    public GitCommand diffColor() {
+        return new GitCommand("git", "-c", "color.ui=always", "diff").run();
+    }
+
     public class GitCommand {
         private final String[] args;
         private int exitCode;

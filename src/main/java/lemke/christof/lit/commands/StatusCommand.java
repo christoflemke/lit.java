@@ -1,5 +1,6 @@
 package lemke.christof.lit.commands;
 
+import lemke.christof.lit.Color;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.status.ModifiedStatus;
 import lemke.christof.lit.status.Status;
@@ -34,24 +35,6 @@ public class StatusCommand implements Command {
 
         public LongStatus(Status status) {
             this.status = status;
-        }
-
-        enum Color {
-            GREEN(32), RED(31);
-
-            final int code;
-
-            Color(int code) {
-                this.code = code;
-            }
-
-            String format(String in, boolean useColor) {
-                if (useColor) {
-                    return "\u001B[" + code + "m" + in + "\u001B[0m";
-                } else {
-                    return in;
-                }
-            }
         }
 
         private void printLong() {

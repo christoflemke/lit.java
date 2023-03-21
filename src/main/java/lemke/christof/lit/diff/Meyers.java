@@ -26,7 +26,6 @@ public class Meyers {
         List<Move> backtrack = backtrack();
         List<Edit> diff = new ArrayList<>();
         for (var move : backtrack) {
-            System.out.println(move);
             Line aLine = move.prevX >= leftSize ? null : left.get(move.prevX);
             Line bLine = move.prevY >= rightSize ? null : right.get(move.prevY);
             if (move.x == move.prevX) {
@@ -86,7 +85,6 @@ public class Meyers {
                     y = y + 1;
                 }
                 assignArray(v, k, x);
-                //System.out.println("depth: "+depth+", k: "+k+", x: "+x+", y: "+y);
                 if (x >= leftSize && y >= rightSize) {
                     return trace;
                 }
@@ -110,7 +108,6 @@ public class Meyers {
         for (int d = shortestEdit.size() - 1; d >= 0; d--) {
             Integer[] v = shortestEdit.get(d);
             int k = x - y;
-            //System.out.println("d: "+d+", k: "+k);
             int prevK = 0;
             if ((k == -d) || (k != d && accessArray(v, k - 1) < accessArray(v, k + 1))) {
                 prevK = k + 1;

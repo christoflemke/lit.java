@@ -2,9 +2,8 @@ package lemke.christof.lit.model;
 
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.time.ZonedDateTime;
-import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CommitTest {

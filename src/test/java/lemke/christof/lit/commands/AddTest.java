@@ -1,30 +1,18 @@
 package lemke.christof.lit.commands;
 
-import lemke.christof.lit.Repository;
-import lemke.christof.lit.Workspace;
+import lemke.christof.lit.BaseTest;
+import lemke.christof.lit.Lit;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-public class AddTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+public class AddTest extends BaseTest {
     @Test
     public void testAdd() throws Exception {
-        Path root = Files.createTempDirectory("test-");
-        Files.createDirectories(root.resolve(".git"));
-        Workspace ws = new Workspace(root);
+        write("test", "foo");
+        write("sub/test.file", "abc");
 
-        Path path = root.resolve("test");
-        Files.writeString(path, "foo");
+        Lit.LitCommand command = lit.add("test", "sub");
 
-        Path sub = root.resolve("sub");
-        Files.createDirectories(sub);
-        Path subFile = sub.resolve("test.file");
-        Files.writeString(subFile, "abc");
-
-        Repository repo = Repository.create(root);
-
-        String[] args = {"test", "sub"};
-        new AddCommand(repo).run(args);
+        assertEquals("", command.output());
     }
 }

@@ -1,6 +1,5 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.model.Blob;
 import lemke.christof.lit.model.Entry;
 import lemke.christof.lit.model.Tree;
 import org.junit.jupiter.api.Test;
@@ -12,18 +11,17 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class WorkspaceTest {
+public class WorkspaceTest extends BaseTest {
     @Test
     public void testListFilesRecursive() throws IOException {
-        Path root = Files.createTempDirectory("test");
+        Path root = repo.db().root();
         Path fooPath = root.resolve("foo.txt");
-        Files.writeString(fooPath, "foo");
-        Files.createDirectories(root.resolve("bin"));
+        write(fooPath.toString(), "foo");
         Path barPath = root.resolve("bin").resolve("bar.txt");
-        Files.writeString(barPath, "bar");
+        write(barPath.toString(), "bar");
 
-        Workspace ws = new Workspace(root);
-        Index idx = new Index(ws);
+        Workspace ws = repo.ws();
+        Index idx = repo.createIndex();
         idx.add(ws.toRelativePath(fooPath));
         idx.add(ws.toRelativePath(barPath));
 
@@ -38,7 +36,6 @@ public class WorkspaceTest {
                 fooEntry
         ));
 
-        System.out.println(result);
         assertEquals(expectedTree, result.root());
 
         assertEquals(2, result.trees().size());

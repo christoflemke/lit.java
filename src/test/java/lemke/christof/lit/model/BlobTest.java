@@ -2,7 +2,6 @@ package lemke.christof.lit.model;
 
 import lemke.christof.lit.Database;
 import lemke.christof.lit.Workspace;
-import lemke.christof.lit.model.Blob;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

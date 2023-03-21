@@ -3,7 +3,6 @@ package lemke.christof.lit.model;
 import lemke.christof.lit.Environment;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
@@ -17,12 +16,7 @@ public class AuthorTest {
                 "GIT_AUTHOR_EMAIL", "me@github.com",
                 "GIT_AUTHOR_DATE", "1678008252 +0100"
         );
-        Environment env = new Environment() {
-            @Override
-            public String get(String key) {
-                return envMap.get(key);
-            }
-        };
+        Environment env = key -> envMap.get(key);
         Author author = Author.createAuthor(env);
         assertEquals("me", author.name());
         assertEquals("me@github.com", author.email());

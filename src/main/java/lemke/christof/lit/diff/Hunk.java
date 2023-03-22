@@ -15,29 +15,26 @@ public record Hunk(int aStart, int bStart, List<Edit> edits) {
     public static List<Hunk> filter(List<Edit> edits) {
         RangeSet<Integer> editPositions = TreeRangeSet.create();
         Range<Integer> current = null;
-        // group by edit positions
         for(int i = 0; i < edits.size(); i++) {
             Edit edit = edits.get(i);
             if(edit.sym() == EditSymbol.EQL) {
-                if(current != null) {
+                if(current != null) { // time to end a chunk
                     editPositions.add(range(current.lowerEndpoint(), i, edits.size()));
                     current = null;
                 }
-                continue;
+                continue; // no active chunk, just continue
             }
-            if (current == null) {
+            if (current == null) { // start a new chunk
                 current = Range.atLeast(i);
             }
         }
-        if (current != null) {
+        if (current != null) { // close last chunk
             editPositions.add(range(current.lowerEndpoint(), edits.size(), edits.size()));
         }
-
         List<Hunk> hunks = new ArrayList<>();
         for(var positions : editPositions.asRanges()) {
             hunks.add(toHunk(edits, positions.lowerEndpoint(), positions.upperEndpoint()));
         }
-
         return hunks;
     }
 

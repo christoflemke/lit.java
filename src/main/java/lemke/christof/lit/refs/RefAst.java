@@ -13,15 +13,15 @@ public sealed interface RefAst permits Ref, Parent, Ancestor {
     Pattern ANCESTOR = Pattern.compile("^(.+)~(\\d+)$");
     ImmutableMap<String, String> REF_ALIASES = ImmutableMap.of("@", "HEAD");
     Pattern INVALID_BRANCH_NAME = Pattern.compile("""
-                                                      ^\\.| # begins with "."
-                                                      \\.\\.| # includes ".."
-                                                      [\\x00-\\x20] # includes control characters
-                                                      [:?\\[^~\\s]| # includes ":", "?", "[", "\", "^", "~", SP, or TAB]
-                                                      /$| # ends with "/"
-                                                      \\.lock$| # ends with ".lock"
-                                                      @\\{ # contains "@{"
-                                                      """, Pattern.COMMENTS);
-
+              ^\\.| # begins with "."
+              \\.\\.| # includes ".."
+              [\\x00-\\x20]| # includes control characters
+              [:?\\[\\^~]| # includes ":", "?", "[", "\", "^", "~"
+              \\s| # includes SP or TAB
+              /$| # ends with "/"
+              \\.lock$| # ends with ".lock"
+              @\\{ # contains "@{"
+              """, Pattern.COMMENTS);
 
     static Optional<RefAst> parse(String name) {
         {
@@ -39,11 +39,15 @@ public sealed interface RefAst permits Ref, Parent, Ancestor {
                 return rev.map(r -> new Ancestor(r, number));
             }
         }
-        if (!INVALID_BRANCH_NAME.matcher(name).matches()) {
+        if (isBranchNameValid(name)) {
             name = REF_ALIASES.getOrDefault(name, name);
             return Optional.of(new Ref(name));
         }
         return Optional.empty();
+    }
+
+    static boolean isBranchNameValid(String name) {
+        return !INVALID_BRANCH_NAME.matcher(name).find();
     }
 }
 

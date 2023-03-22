@@ -1,5 +1,7 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.refs.RefAst;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.*;
@@ -90,27 +92,8 @@ public record Refs (Path root) {
         }
     }
 
-    /*
-     * - any path component of it begins with ".", or
-     * - it has double dots "..", or
-     * - it has ASCII control characters, or
-     * - it has ":", "?", "[", "\", "^", "~", SP, or TAB anywhere, or
-     * - it has "*" anywhere unless REFNAME_REFSPEC_PATTERN is set, or
-     * - it ends with a "/", or
-     * - it ends with ".lock", or
-     * - it contains a "@{" portion
-     */
-    private static final Pattern INVALID_BRANCH_NAME = Pattern.compile("""
-            ^\\.| # begins with "."
-            \\.\\.| # includes ".."
-            [\\x00-\\x20] # includes control characters
-            [:?\\[^~\\s]| # includes ":", "?", "[", "\", "^", "~", SP, or TAB]
-            /$| # ends with "/"
-            \\.lock$| # ends with ".lock"
-            @\\{ # contains "@{"
-            """, Pattern.COMMENTS);
     private static void validateBranchName(String branchName) {
-        if (INVALID_BRANCH_NAME.matcher(branchName).find()) {
+        if (!RefAst.isBranchNameValid(branchName)) {
             throw new RuntimeException("Invalid branch name: " + branchName);
         }
     }

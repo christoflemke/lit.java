@@ -67,7 +67,7 @@ public class Meyers {
                     y = y + 1;
                 }
                 v.set(k, x);
-                System.out.println("depth: "+depth+", k: "+k+", x: "+x+", y: "+y);
+                //System.out.println("depth: "+depth+", k: "+k+", x: "+x+", y: "+y);
                 if (x >= leftSize && y >= rightSize) {
                     return trace;
                 }

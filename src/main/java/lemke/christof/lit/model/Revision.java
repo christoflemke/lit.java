@@ -1,48 +1,46 @@
 package lemke.christof.lit.model;
 
-import com.google.common.collect.ImmutableMap;
+import lemke.christof.lit.Repository;
+import lemke.christof.lit.refs.Context;
+import lemke.christof.lit.refs.RefAst;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Optional;
 
-public sealed interface Revision permits Revision.Ref, Revision.Parent, Revision.Ancestor {
-    record Ref(String name) implements Revision {}
-    record Parent(Revision rev) implements Revision {}
-    record Ancestor(Revision rev, int n) implements Revision {}
+public class Revision implements Context {
 
-    Pattern PARENT = Pattern.compile("^(.+)\\^$");
-    Pattern ANCESTOR = Pattern.compile("^(.+)~(\\d+)$");
-    ImmutableMap<String, String> REF_ALIASES = ImmutableMap.of("@", "HEAD");
-    Pattern INVALID_BRANCH_NAME = Pattern.compile("""
-            ^\\.| # begins with "."
-            \\.\\.| # includes ".."
-            [\\x00-\\x20] # includes control characters
-            [:?\\[^~\\s]| # includes ":", "?", "[", "\", "^", "~", SP, or TAB]
-            /$| # ends with "/"
-            \\.lock$| # ends with ".lock"
-            @\\{ # contains "@{"
-            """, Pattern.COMMENTS);
+    private final Repository repo;
+    private final Optional<RefAst> query;
+    private final String expression;
 
-    static Revision from(String name) {
-        {
-            Matcher matcher = PARENT.matcher(name);
-            if (matcher.matches()) {
-                Revision rev = Revision.from(matcher.group(1));
-                return rev == null ? null : new Parent(rev);
-            }
+    public Revision(Repository repo, String expression) {
+        this.repo = repo;
+        this.expression = expression;
+        this.query = RefAst.parse(expression);
+    }
+
+    public String resolve() throws InvalidObjectException {
+        Optional<String> oid = query.flatMap(q -> q.resolve(this));
+        return oid.orElseThrow(() -> new InvalidObjectException("No valid object name: "+expression));
+
+    }
+
+    static class InvalidObjectException extends Exception {
+        public InvalidObjectException(String s) {
+            super(s);
         }
-        {
-            Matcher matcher = ANCESTOR.matcher(name);
-            if (matcher.matches()) {
-                Revision rev = Revision.from(matcher.group(1));
-                int number = Integer.parseInt(matcher.group(2));
-                return rev == null ? null : new Ancestor(rev, number);
-            }
+    }
+
+    @Override public Optional<String> readRef(String name) {
+        return repo.refs().readRef(name);
+    }
+
+    @Override public String commitParent(String oid) {
+        DbObject o = repo.db().read(oid);
+        if (o instanceof Commit commit) {
+            return commit.parent();
+        } else {
+            throw new RuntimeException("Expected oid to point to commit "+oid);
         }
-        if(!INVALID_BRANCH_NAME.matcher(name).matches()) {
-            name = REF_ALIASES.getOrDefault(name, name);
-            return new Ref(name);
-        }
-        return null;
     }
 }
+

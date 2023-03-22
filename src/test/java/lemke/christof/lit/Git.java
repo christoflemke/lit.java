@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Map;
 
 public class Git {
     private final Path root;
@@ -27,7 +28,16 @@ public class Git {
     }
 
     public GitCommand commit() {
-        return new GitCommand("git", "commit", "-m", "'test'").run();
+        Map<String, String> environment = Map.of(
+            "GIT_COMMITTER_DATE", "1678008251 +0100",
+            "GIT_AUTHOR_DATE", "1678008252 +0100",
+            "GIT_AUTHOR_NAME", "Christof Lemke",
+            "GIT_COMMITTER_NAME", "Christof Lemke",
+            "GIT_AUTHOR_EMAIL", "doesnotexist@gmail.com"
+        );
+        return new GitCommand("git", "commit", "-m", "'test'")
+            .environment(environment)
+            .run();
     }
 
     private String[] concat(String[] args1, String... args2) {
@@ -60,9 +70,19 @@ public class Git {
         private final String[] args;
         private int exitCode;
         private String output;
+        private Map<String, String> environment;
 
         public GitCommand(String... args) {
             this.args = args;
+            this.environment = Map.of();
+        }
+        public GitCommand(Map<String,String> environment, String... args) {
+            this.args = args;
+            this.environment = environment;
+        }
+
+        public GitCommand environment(Map<String, String> environment) {
+            return new GitCommand(environment, args);
         }
 
         public int exitCode() {
@@ -73,6 +93,7 @@ public class Git {
             try {
                 ProcessBuilder processBuilder = new ProcessBuilder(args);
                 processBuilder.directory(root.toFile());
+                processBuilder.environment().putAll(environment);
                 Process process = processBuilder.start();
                 exitCode = process.waitFor();
                 if(exitCode != 0) {

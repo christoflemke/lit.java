@@ -1,7 +1,10 @@
 package lemke.christof.lit;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 public record Refs (Path root) {
@@ -110,5 +113,31 @@ public record Refs (Path root) {
         if (INVALID_BRANCH_NAME.matcher(branchName).find()) {
             throw new RuntimeException("Invalid branch name: " + branchName);
         }
+    }
+
+    public Optional<String> readRef(String name) {
+        Path path = pathForName(name);
+        if(path != null) {
+            return readRefFile(path);
+        }
+        return Optional.empty();
+    }
+
+    private Optional<String> readRefFile(Path path) {
+        try {
+            return Optional.of(Files.readString(path).stripTrailing());
+        } catch (FileNotFoundException e) {
+            return Optional.empty();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Path pathForName(String name) {
+        List<Path> prefixes = List.of(gitPath(), refsPath(), headsPath());
+        Optional<Path> prefix = prefixes.stream()
+            .filter(p -> p.resolve(name).toFile().exists())
+            .findFirst();
+        return prefix.isPresent() ? prefix.get().resolve(name) : null;
     }
 }

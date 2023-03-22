@@ -16,11 +16,11 @@ public sealed interface RefAst permits Ref, Parent, Ancestor {
               ^\\.| # begins with "."
               \\.\\.| # includes ".."
               [\\x00-\\x20]| # includes control characters
-              [:?\\[\\^~]| # includes ":", "?", "[", "\", "^", "~"
+              [:?\\[^~]| # includes ":", "?", "\", "^", "~", "square bracket start"
               \\s| # includes SP or TAB
               /$| # ends with "/"
               \\.lock$| # ends with ".lock"
-              @\\{ # contains "@{"
+              @\\{ # contains "@" follwed by a "curly brace start"
               """, Pattern.COMMENTS);
 
     static Optional<RefAst> parse(String name) {
@@ -28,7 +28,7 @@ public sealed interface RefAst permits Ref, Parent, Ancestor {
             Matcher matcher = PARENT.matcher(name);
             if (matcher.matches()) {
                 Optional<RefAst> rev = RefAst.parse(matcher.group(1));
-                return rev.map(r -> new Parent(r));
+                return rev.map(Parent::new);
             }
         }
         {

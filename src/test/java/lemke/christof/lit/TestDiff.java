@@ -30,8 +30,25 @@ public class TestDiff {
     }
 
     @Test void diffEmpty() {
-//        List<Edit> diff = Diff.diff("", "");
-//        assertEquals("", editsToString(diff));
+        List<Edit> diff = Diff.diff("", "");
+        assertEquals("", editsToString(diff));
+    }
+
+    @Test void andNowForSomethingCompletelyDifferent() {
+        List<Edit> diff = Diff.diff("a", "b");
+        assertEquals("-a+b", editsToString(diff));
+    }
+
+    @Test void moreDifferent() {
+        List<Edit> diff = Diff.diff("1\n2\n3\n", "a\nb\nc\n");
+        assertEquals("""
+                         -1
+                         -2
+                         -3
+                         +a
+                         +b
+                         +c
+                         """, editsToString(diff));
     }
 
     @Test

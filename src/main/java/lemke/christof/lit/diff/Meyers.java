@@ -16,7 +16,7 @@ public class Meyers {
         this.right = Collections.unmodifiableList(right);
         leftSize = left.size();
         rightSize = right.size();
-        maxSize = Math.max(leftSize, rightSize);
+        maxSize = leftSize + rightSize;
     }
 
     public List<Edit> diff() {
@@ -57,9 +57,9 @@ public class Meyers {
             for (int k = -depth; k <= depth; k += 2) {
                 int x;
                 if (k == -depth || (k != depth && v.get(k -1) < v.get(k + 1))) {
-                    x = v.get(k + 1);
+                    x = v.get(k + 1);// down
                 } else {
-                    x = v.get(k - 1) + 1;
+                    x = v.get(k - 1) + 1; // right
                 }
                 int y = x - k;
                 while (x < leftSize && y < rightSize && left.get(x).text().equals(right.get(y).text())) {
@@ -67,6 +67,7 @@ public class Meyers {
                     y = y + 1;
                 }
                 v.set(k, x);
+                System.out.println("depth: "+depth+", k: "+k+", x: "+x+", y: "+y);
                 if (x >= leftSize && y >= rightSize) {
                     return trace;
                 }

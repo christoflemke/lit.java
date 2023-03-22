@@ -1,7 +1,10 @@
 plugins {
     id 'java'
+    id 'org.beryx.jlink' version "2.26.0"
 }
 
+jlink.moduleName = 'lemke.christof.lit'
+jlink.mainClass = 'lemke.christof.lit.Main'
 group 'lemke.christof.llit'
 version '1.0-SNAPSHOT'
 

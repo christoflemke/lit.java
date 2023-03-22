@@ -40,26 +40,10 @@ public class Meyers {
         return diff;
     }
 
-    private void assignArray(Integer[] a, int i, int v) {
-        if (i < 0) {
-            a[a.length + i] = v;
-        } else {
-            a[i] = v;
-        }
-    }
-
-    private Integer accessArray(Integer[] a, int i) {
-        if (i < 0) {
-            return a[a.length + i];
-        } else {
-            return a[i];
-        }
-    }
-
-    public List<Integer[]> shortestEdit() {
-        Integer[] v = new Integer[maxSize * 2 + 1];
-        v[1] = 0;
-        List<Integer[]> trace = new ArrayList<>();
+    public List<WrappingArray> shortestEdit() {
+        WrappingArray v = new WrappingArray(maxSize * 2 + 1);
+        v.set(1, 0);
+        List<WrappingArray> trace = new ArrayList<>();
         /*
             The depth is the depth in the search tree
          */
@@ -71,20 +55,18 @@ public class Meyers {
              * and y is the position on the vertical axis
              */
             for (int k = -depth; k <= depth; k += 2) {
-                Integer vkMinus = accessArray(v, k - 1);
-                Integer vkPlus = accessArray(v, k + 1);
                 int x;
-                if (k == -depth || (k != depth && vkMinus < vkPlus)) {
-                    x = vkPlus;
+                if (k == -depth || (k != depth && v.get(k -1) < v.get(k + 1))) {
+                    x = v.get(k + 1);
                 } else {
-                    x = vkMinus + 1;
+                    x = v.get(k - 1) + 1;
                 }
                 int y = x - k;
                 while (x < leftSize && y < rightSize && left.get(x).text().equals(right.get(y).text())) {
                     x = x + 1;
                     y = y + 1;
                 }
-                assignArray(v, k, x);
+                v.set(k, x);
                 if (x >= leftSize && y >= rightSize) {
                     return trace;
                 }
@@ -103,18 +85,18 @@ public class Meyers {
     public List<Move> backtrack() {
         int x = leftSize;
         int y = rightSize;
-        List<Integer[]> shortestEdit = shortestEdit();
+        List<WrappingArray> shortestEdit = shortestEdit();
         List<Move> moves = new ArrayList<>();
         for (int d = shortestEdit.size() - 1; d >= 0; d--) {
-            Integer[] v = shortestEdit.get(d);
+            WrappingArray v = shortestEdit.get(d);
             int k = x - y;
             int prevK = 0;
-            if ((k == -d) || (k != d && accessArray(v, k - 1) < accessArray(v, k + 1))) {
+            if ((k == -d) || (k != d && v.get(k - 1) < v.get(k + 1))) {
                 prevK = k + 1;
             } else {
                 prevK = k - 1;
             }
-            int prevX = accessArray(v,prevK);
+            int prevX = v.get(prevK);
             int prevY = prevX - prevK;
             while (x > prevX && y > prevY) {
                 moves.add(new Move(x - 1, y - 1, x, y));

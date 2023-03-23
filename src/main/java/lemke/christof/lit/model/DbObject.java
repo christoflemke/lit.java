@@ -50,9 +50,9 @@ public interface DbObject {
         return out.toByteArray();
     }
 
-    default String oid() {
+    default Oid oid() {
         byte[] sum = sha1().digest(diskData());
-        return HexFormat.of().formatHex(sum);
+        return Oid.fromBytes(sum);
     }
 
     private static MessageDigest sha1() {

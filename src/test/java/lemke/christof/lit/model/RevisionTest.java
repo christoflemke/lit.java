@@ -31,6 +31,6 @@ public class RevisionTest extends BaseTest {
     }
 
     private String revision(String name) throws Revision.InvalidObjectException {
-        return new Revision(repo, name).resolve();
+        return new Revision(repo, name).resolve().value();
     }
 }

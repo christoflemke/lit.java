@@ -6,12 +6,17 @@ import lemke.christof.lit.model.*;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 public record ListHeadCommand(Repository repo) implements Command {
     @Override
     public void run(String[] args) {
         Database db = repo.db();
-        Commit commit = (Commit) db.read(repo.refs().readHead());
+        Optional<Oid> oid = repo.refs().readHead();
+        if(oid.isEmpty()) {
+            throw new RuntimeException("HEAD does not point to anything");
+        }
+        Commit commit = (Commit) db.read(oid.get());
 
         Tree tree = (Tree) db.read(commit.treeOid());
         listRecursive(db, tree, Path.of(""));

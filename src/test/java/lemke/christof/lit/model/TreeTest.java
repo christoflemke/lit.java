@@ -29,6 +29,6 @@ public class TreeTest {
 
     @Test
     public void testOid() {
-        assertEquals("88e38705fdbd3608cddbe904b67c731f3234c45b", tree.oid());
+        assertEquals("88e38705fdbd3608cddbe904b67c731f3234c45b", tree.oid().value());
     }
 }

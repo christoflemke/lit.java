@@ -6,6 +6,7 @@ import lemke.christof.lit.Index;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.model.Commit;
 import lemke.christof.lit.model.FileStat;
+import lemke.christof.lit.model.Oid;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -94,11 +95,11 @@ public class StatusBuilder {
     }
 
     private Map<Path, Database.TreeEntry> loadHeadTree() {
-        String head = this.repo.refs().readHead();
-        if (head == null) {
+        Optional<Oid> head = this.repo.refs().readHead();
+        if (head.isEmpty()) {
             return Map.of();
         }
-        Commit commit = (Commit) repo.db().read(head);
+        Commit commit = (Commit) repo.db().read(head.get());
         return repo.db().readTree(commit, Path.of(""), null);
     }
 
@@ -124,7 +125,7 @@ public class StatusBuilder {
                 return ModifiedStatus.WORKSPACE_MODIFIED;
             }
 
-            String fileOid = idx.hash(relativePath);
+            Oid fileOid = idx.hash(relativePath);
             if (idxEntry.get().oid().equals(fileOid)) {
                 idx.update(relativePath, fileOid, currentStat);
                 return ModifiedStatus.STAGED;

@@ -5,8 +5,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public record Commit (
-        String parent,
-        String treeOid,
+        Optional<Oid> parent,
+        Oid treeOid,
         Author author,
         Author committer,
         String message
@@ -20,8 +20,8 @@ public record Commit (
     public byte[] data() {
         List<String> items = new ArrayList<>();
         items.add("tree " + treeOid);
-        if (parent != null) {
-            items.add("parent " + parent);
+        if (parent.isPresent()) {
+            items.add("parent " + parent.get());
         }
         items.add("author " + author);
         items.add("committer " + committer);
@@ -44,8 +44,8 @@ public record Commit (
         }
         String message = scanner.nextLine();
         return new Commit(
-            fields.get("parent"),
-            fields.get("tree"),
+            Oid.ofNullable(fields.get("parent")),
+            Oid.of(fields.get("tree")),
             Author.fromString(fields.get("author")),
             Author.fromString(fields.get("committer")),
             message

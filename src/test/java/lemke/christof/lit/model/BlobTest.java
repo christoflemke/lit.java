@@ -18,7 +18,7 @@ public class BlobTest {
     @Test
     public void testOid() {
         Blob blob = Blob.fromString("hello\n");
-        assertEquals("ce013625030ba8dba906f756967f9e9ca394464a", blob.oid());
+        assertEquals("ce013625030ba8dba906f756967f9e9ca394464a", blob.oid().value());
     }
 
     @Test

@@ -1,12 +1,14 @@
 package lemke.christof.lit.refs;
 
+import lemke.christof.lit.model.Oid;
+
 import java.util.Optional;
 
 record Ancestor(RefAst rev, int n) implements RefAst {
-    @Override public Optional<String> resolve(Context context) {
-        Optional<String> oid = rev.resolve(context);
+    @Override public Optional<Oid> resolve(Context context) {
+        Optional<Oid> oid = rev.resolve(context);
         for (int i = 0; i < n; i++) {
-            oid = oid.map(context::commitParent);
+            oid = oid.flatMap(context::commitParent);
         }
         return oid;
     }

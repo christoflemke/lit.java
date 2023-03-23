@@ -1,5 +1,6 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.model.Oid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -10,7 +11,12 @@ public class RefTest extends BaseTest {
     @BeforeEach
     public void setUp() {
         git.init();
+        write("a");
+        git.add("a");
+        git.commit();
     }
+
+    private static final Oid NULL_OID = Oid.of(Util.repeat("0", 40));
 
     @Test
     public void createInvalidBranch() {
@@ -28,11 +34,11 @@ public class RefTest extends BaseTest {
             invalidBranchName("something.lock"),
             invalidBranchName("something@{something")
         );
-        repo.refs().createBranch("master");
-        repo.refs().createBranch("main");
+        repo.refs().createBranch("master1", NULL_OID);
+        repo.refs().createBranch("main", NULL_OID);
     }
 
     private Executable invalidBranchName(String branchName) {
-        return () -> assertThrows(RuntimeException.class, () -> repo.refs().createBranch(branchName), branchName + " should not be valid");
+        return () -> assertThrows(RuntimeException.class, () -> repo.refs().createBranch(branchName, NULL_OID), branchName + " should not be valid");
     }
 }

@@ -3,16 +3,19 @@ package lemke.christof.lit.commands;
 import lemke.christof.lit.Database;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.Util;
-import lemke.christof.lit.model.Commit;
-import lemke.christof.lit.model.DbObject;
-import lemke.christof.lit.model.Entry;
-import lemke.christof.lit.model.Tree;
+import lemke.christof.lit.model.*;
+
+import java.util.Optional;
 
 public record ShowHeadCommand(Repository repo) implements Command {
     @Override
     public void run(String[] args) {
         Database db = repo.db();
-        Commit commit = (Commit) db.read(repo.refs().readHead());
+        Optional<Oid> oid = repo.refs().readHead();
+        if(oid.isEmpty()) {
+            throw new RuntimeException("HEAD does not point to anything");
+        }
+        Commit commit = (Commit) db.read(oid.get());
         repo.io().out().println("commit " + commit.oid());
         Tree tree = (Tree) db.read(commit.treeOid());
         printTree(db, tree, 2);

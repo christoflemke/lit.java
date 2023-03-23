@@ -4,11 +4,9 @@ import lemke.christof.lit.*;
 import lemke.christof.lit.model.*;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public record CommitCommand(Repository repo) implements Command {
@@ -21,7 +19,7 @@ public record CommitCommand(Repository repo) implements Command {
             repo.db().write(t);
         }
         String message = readMessage();
-        String parent = repo.refs().readHead();
+        Optional<Oid> parent = repo.refs().readHead();
         Commit commit = new Commit(
                 parent,
                 result.root().oid(),

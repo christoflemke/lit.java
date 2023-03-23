@@ -1,13 +1,14 @@
 package lemke.christof.lit.refs;
 
 import com.google.common.collect.ImmutableMap;
+import lemke.christof.lit.model.Oid;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public sealed interface RefAst permits Ref, Parent, Ancestor {
-    Optional<String> resolve(Context context);
+    Optional<Oid> resolve(Context context);
 
     Pattern PARENT = Pattern.compile("^(.+)\\^$");
     Pattern ANCESTOR = Pattern.compile("^(.+)~(\\d+)$");

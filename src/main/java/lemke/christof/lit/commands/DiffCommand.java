@@ -5,6 +5,7 @@ import lemke.christof.lit.diff.Diff;
 import lemke.christof.lit.diff.Edit;
 import lemke.christof.lit.diff.Hunk;
 import lemke.christof.lit.model.Blob;
+import lemke.christof.lit.model.Oid;
 import lemke.christof.lit.status.Status;
 
 import java.nio.file.Path;
@@ -12,13 +13,13 @@ import java.util.List;
 
 public class DiffCommand implements Command {
 
-    private record Target(Path path, String oid, String mode, String data) {
+    private record Target(Path path, Oid oid, String mode, String data) {
         String diffPath(String a) {
             return mode == null ? NULL_PATH : Path.of(a).resolve(path).toString();
         }
     }
 
-    private static final String NULL_OID = Util.repeat("0", 40);
+    private static final Oid NULL_OID = Oid.of(Util.repeat("0", 40));
     private static final String NULL_PATH = "/dev/null";
     private final Repository repo;
     private final Status status;
@@ -72,14 +73,14 @@ public class DiffCommand implements Command {
     private Target fromFile(Path path) {
         String data = repo.ws().readString(path);
         Blob blob = Blob.fromString(data);
-        String oid = blob.oid();
+        Oid oid = blob.oid();
         String mode = repo.ws().stat(path).modeString();
         return new Target(path, oid, mode, data);
     }
 
     private Target fromIndex(Path path) {
         Index.Entry entry = idx.get(path).get();
-        String oid = entry.oid();
+        Oid oid = entry.oid();
         String mode = entry.stat().modeString();
         Blob blob = (Blob) repo.db().read(oid);
         return new Target(path, oid, mode, blob.stringData());
@@ -112,7 +113,7 @@ public class DiffCommand implements Command {
         if (a.oid.equals(b.oid)) {
             return;
         }
-        String oidRange = "index " + shorten(a.oid) + ".." + shorten(b.oid);
+        String oidRange = "index " + a.oid.shortOid() + ".." + b.oid.shortOid();
         if (a.mode != null && a.mode.equals(b.mode)) {
             oidRange += " " + a.mode;
         }
@@ -153,10 +154,6 @@ public class DiffCommand implements Command {
 
     private void printHeader(String in) {
         println(Color.BOLD.format(in, useColor));
-    }
-
-    private String shorten(String aOid) {
-        return aOid.substring(0, 7);
     }
 
     private void println(Object o) {

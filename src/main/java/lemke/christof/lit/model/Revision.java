@@ -18,23 +18,23 @@ public class Revision implements Context {
         this.query = RefAst.parse(expression);
     }
 
-    public String resolve() throws InvalidObjectException {
-        Optional<String> oid = query.flatMap(q -> q.resolve(this));
+    public Oid resolve() throws InvalidObjectException {
+        Optional<Oid> oid = query.flatMap(q -> q.resolve(this));
         return oid.orElseThrow(() -> new InvalidObjectException("No valid object name: "+expression));
 
     }
 
-    static class InvalidObjectException extends Exception {
+    public static class InvalidObjectException extends Exception {
         public InvalidObjectException(String s) {
             super(s);
         }
     }
 
-    @Override public Optional<String> readRef(String name) {
+    @Override public Optional<Oid> readRef(String name) {
         return repo.refs().readRef(name);
     }
 
-    @Override public String commitParent(String oid) {
+    @Override public Optional<Oid> commitParent(Oid oid) {
         DbObject o = repo.db().read(oid);
         if (o instanceof Commit commit) {
             return commit.parent();

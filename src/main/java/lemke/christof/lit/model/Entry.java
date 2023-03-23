@@ -4,7 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 
-public record Entry (Path name, String oid, String mode) {
+public record Entry (Path name, Oid oid, String mode) {
 
     public Path relativePath() {
         return name.getFileName();

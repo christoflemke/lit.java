@@ -1,5 +1,6 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.model.Oid;
 import lemke.christof.lit.refs.RefAst;
 
 import java.io.FileNotFoundException;
@@ -7,7 +8,6 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 public record Refs (Path root) {
     Path headPath() {
@@ -26,11 +26,10 @@ public record Refs (Path root) {
         return refsPath().resolve("heads");
     }
 
-    public void updateHead(String ref) {
-
+    public void updateHead(Oid ref) {
         try {
             Path tempFile = Files.createTempFile(gitPath(), "head-", null);
-            Files.writeString(tempFile, ref);
+            Files.writeString(tempFile, ref.value());
             Files.move(tempFile, headPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -53,28 +52,27 @@ public record Refs (Path root) {
         }
     }
 
-    public String readHead() {
+    public Optional<Oid> readHead() {
         try {
             String ref = Files.readString(headPath());
             if (ref.startsWith("ref:")) {
                 String[] split = ref.split(" ");
                 String sha = Files.readString(gitPath().resolve(Path.of(split[1].trim())));
-                return sha.trim();
+                return Optional.of(Oid.of(sha));
             }
-            return ref.trim();
+            return Optional.of(Oid.of(ref));
         } catch (NoSuchFileException e) {
-            return null;
+            return Optional.empty();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void createBranch(String branchName) {
-        String ref = readHead();
-        writeRef(branchName, ref);
+    public void createBranch(String branchName, Oid startOid) {
+        writeRef(branchName, startOid);
     }
 
-    private void writeRef(String branchName, String ref) {
+    private void writeRef(String branchName, Oid ref) {
         try {
             validateBranchName(branchName);
             Path branchPath = gitPath().resolve("refs").resolve("heads").resolve(branchName);
@@ -98,17 +96,13 @@ public record Refs (Path root) {
         }
     }
 
-    public Optional<String> readRef(String name) {
-        Path path = pathForName(name);
-        if(path != null) {
-            return readRefFile(path);
-        }
-        return Optional.empty();
+    public Optional<Oid> readRef(String name) {
+        return pathForName(name).flatMap(this::readRefFile);
     }
 
-    private Optional<String> readRefFile(Path path) {
+    private Optional<Oid> readRefFile(Path path) {
         try {
-            return Optional.of(Files.readString(path).stripTrailing());
+            return Optional.of(Oid.of(Files.readString(path)));
         } catch (FileNotFoundException e) {
             return Optional.empty();
         } catch (IOException e) {
@@ -116,11 +110,10 @@ public record Refs (Path root) {
         }
     }
 
-    private Path pathForName(String name) {
-        List<Path> prefixes = List.of(gitPath(), refsPath(), headsPath());
-        Optional<Path> prefix = prefixes.stream()
-            .filter(p -> p.resolve(name).toFile().exists())
+    private Optional<Path> pathForName(String name) {
+        return List.of(gitPath(), refsPath(), headsPath()).stream()
+            .map(prefix -> prefix.resolve(name))
+            .filter(path -> path.toFile().exists())
             .findFirst();
-        return prefix.isPresent() ? prefix.get().resolve(name) : null;
     }
 }

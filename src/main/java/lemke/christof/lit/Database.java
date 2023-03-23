@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.Inflater;
@@ -21,8 +20,8 @@ public record Database(Path root) {
 
     public void write(DbObject o) {
         try {
-            String oid = o.oid();
-            Path filePath = objectPath(oid);
+            Oid oid = o.oid();
+            Path filePath = oid.objectPath(objectsPath());
             if(filePath.toFile().exists()) {
                 return;
             }
@@ -33,8 +32,8 @@ public record Database(Path root) {
         }
     }
 
-    public DbObject read(String oid) {
-        Path path = objectPath(oid);
+    public DbObject read(Oid oid) {
+        Path path = oid.objectPath(objectsPath());
         try {
             InflaterInputStream in = new InflaterInputStream(new FileInputStream(path.toFile()), new Inflater());
             byte[] bytes = in.readAllBytes();
@@ -61,16 +60,11 @@ public record Database(Path root) {
         }
     }
 
-    private Path objectPath(String oid) {
-        Path dirPath = objectsPath().resolve(oid.substring(0, 2));
-        return dirPath.resolve(oid.substring(2));
-    }
-
-    public record TreeEntry(Path path, String oid, String mode) {}
+    public record TreeEntry(Path path, Oid oid, String mode) {}
 
     public Map<Path, TreeEntry> readTree(DbObject parent, Path path, String mode) {
         if (parent instanceof Commit c) {
-            String treeOid = c.treeOid();
+            Oid treeOid = c.treeOid();
             Tree tree = (Tree) read(treeOid);
             return readTree(tree, path, mode);
         }

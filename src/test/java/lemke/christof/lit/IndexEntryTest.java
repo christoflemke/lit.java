@@ -1,6 +1,7 @@
 package lemke.christof.lit;
 
 import lemke.christof.lit.model.FileStat;
+import lemke.christof.lit.model.Oid;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,7 +24,7 @@ public class IndexEntryTest {
         Path root = Files.createTempDirectory("test-");
         path = Files.createTempFile(root, "test-", null);
         Workspace ws = new Workspace(root);
-        entry = new Index(ws).createEntry(ws.toRelativePath(path), "1234");
+        entry = new Index(ws).createEntry(ws.toRelativePath(path), Oid.of(Util.repeat("0", 40)));
     }
 
     public static Stream<String> intMethods() {

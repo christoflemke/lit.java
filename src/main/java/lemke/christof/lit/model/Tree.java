@@ -16,7 +16,7 @@ public record Tree (List<Entry> entries) implements DbObject {
     public byte[] data() {
         List<byte[]> chunks =  entries.stream().sorted(Entry.byName).map(e -> {
             byte[] mode = e.mode().getBytes(StandardCharsets.UTF_8);
-            byte[] oid = HexFormat.of().parseHex(e.oid());
+            byte[] oid = e.oid().toHexBytes();
             byte[] name = e.relativePath().toString().getBytes(StandardCharsets.UTF_8);
 
             int length = mode.length + 1 + name.length + 1 + oid.length;
@@ -62,7 +62,7 @@ public record Tree (List<Entry> entries) implements DbObject {
             buff.get(oid);
             String modeString = new String(mode);
             String pathString = new String(path);
-            String oidString = HexFormat.of().formatHex(oid);
+            Oid oidString = Oid.fromBytes(oid);
             entries.add(new Entry(Path.of(pathString), oidString, modeString));
         }
         return new Tree(entries);

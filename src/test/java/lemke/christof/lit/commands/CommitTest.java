@@ -24,4 +24,16 @@ public class CommitTest extends BaseTest {
 
         assertEquals(2, index.entries().size());
     }
+
+    @Test public void commitWithParent() {
+        lit.init();
+        write("a");
+        lit.add("a");
+        lit.commit();
+
+        write("b");
+        lit.add("b");
+        lit.commit();
+        System.out.println("");
+    }
 }

@@ -1,6 +1,10 @@
 package lemke.christof.lit.commands;
 
 import lemke.christof.lit.Repository;
+import lemke.christof.lit.model.Oid;
+import lemke.christof.lit.model.Revision;
+
+import java.util.Optional;
 
 public class BranchCommand implements Command {
 
@@ -20,6 +24,23 @@ public class BranchCommand implements Command {
             throw new RuntimeException("Please provide a branch name");
         }
         String branchName = args[0];
-        repo.refs().createBranch(branchName);
+        Optional<Oid> head = repo.refs().readHead();
+        String startPoint;
+        if (args.length > 1) {
+            startPoint = args[1];
+        } else {
+            if(head.isEmpty()) {
+                throw new RuntimeException("No revision specified and HEAD does not point to anything");
+            }
+            startPoint = head.get().value();
+        }
+        Revision revision = new Revision(repo, startPoint);
+        Oid startOid;
+        try {
+            startOid = revision.resolve();
+        } catch (Revision.InvalidObjectException e) {
+            throw new RuntimeException(e);
+        }
+        repo.refs().createBranch(branchName, startOid);
     }
 }

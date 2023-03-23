@@ -2,6 +2,7 @@ package lemke.christof.lit;
 
 import lemke.christof.lit.model.Blob;
 import lemke.christof.lit.model.FileStat;
+import lemke.christof.lit.model.Oid;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -93,7 +94,6 @@ public class Index {
                 throw new RuntimeException("Index checksum mismatch. Computed: " + sum + " read: " + indexSum);
             }
         } catch (FileNotFoundException e) {
-            return;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -169,7 +169,7 @@ public class Index {
 
             Entry e = new Entry(
                     Path.of(new String(pathBytes, StandardCharsets.UTF_8)),
-                    HexFormat.of().formatHex(oidBytes),
+                    Oid.fromBytes(oidBytes),
                     stat
 
             );
@@ -238,7 +238,7 @@ public class Index {
         return sha1;
     }
 
-    Entry createEntry(Path path, String oid) {
+    Entry createEntry(Path path, Oid oid) {
         FileStat stat = ws.stat(path);
         return new Entry(
             path,
@@ -247,14 +247,14 @@ public class Index {
         );
     }
 
-    public String hash(Path relativePath) {
+    public Oid hash(Path relativePath) {
         return new Blob(ws.read(relativePath)).oid();
     }
     public static int calculatePadding(int pathLength) {
         return 8 - ((62 + pathLength) % 8);
     }
 
-    public void update(Path path, String oid, FileStat currentStat) {
+    public void update(Path path, Oid oid, FileStat currentStat) {
         Entry e = new Entry(path, oid, currentStat);
         boolean removed = entries.remove(e);
         boolean added = entries.add(e);
@@ -263,14 +263,14 @@ public class Index {
         }
     }
 
-    public record Entry(Path path, String oid, FileStat stat) {
+    public record Entry(Path path, Oid oid, FileStat stat) {
 
         public short flags() {
             return (short) Math.min(path.toString().length(), 0xfff);
         }
 
         public byte[] oidBytes() {
-            return HexFormat.of().parseHex(oid());
+            return HexFormat.of().parseHex(oid().toString());
         }
 
         public byte[] pathBytes() {

@@ -1,9 +1,12 @@
 package lemke.christof.lit.database;
 
+import lemke.christof.lit.FileMode;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -11,9 +14,9 @@ public class TreeTest {
 
     Blob helloBlob = Blob.fromString("hello\n");
     Blob worldBlob = Blob.fromString("world\n");
-    Entry helloEntry = new Entry(Path.of("hello.txt"), helloBlob.oid(), "100644");
-    Entry worldEntry = new Entry(Path.of("world.txt"), worldBlob.oid(), "100644");
-    Tree tree = new Tree(List.of(helloEntry, worldEntry));
+    Entry helloEntry = new Entry(Path.of("hello.txt"), helloBlob.oid(), FileMode.NORMAL);
+    Entry worldEntry = new Entry(Path.of("world.txt"), worldBlob.oid(), FileMode.NORMAL);
+    Tree tree = Tree.fromList(List.of(helloEntry, worldEntry));
 
     @Test
     public void testData() {

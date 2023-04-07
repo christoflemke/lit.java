@@ -10,7 +10,7 @@ import java.util.HexFormat;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
-public interface DbObject {
+sealed public interface DbObject permits Commit, Tree, Blob {
 
     public enum ObjectType {
         COMMIT, TREE, BLOB;

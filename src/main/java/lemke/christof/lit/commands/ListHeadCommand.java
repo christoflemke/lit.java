@@ -5,7 +5,7 @@ import lemke.christof.lit.Repository;
 import lemke.christof.lit.database.*;
 
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 
 public record ListHeadCommand(Repository repo) implements Command {
@@ -23,8 +23,7 @@ public record ListHeadCommand(Repository repo) implements Command {
     }
 
     private void listRecursive(Database db, Tree o, Path path) {
-        List<Entry> entries = ((Tree) o).entries();
-        for (Entry e : entries) {
+        for (Entry e : o.entries().values()) {
             Path entryPath = path.resolve(e.relativePath());
 
             DbObject child = db.read(e.oid());

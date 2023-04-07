@@ -1,5 +1,7 @@
 package lemke.christof.lit.database;
 
+import lemke.christof.lit.FileMode;
+
 public record FileStat(int ctime_sec, int ctime_nano, int mtime_sec, int mtime_nano, int dev,
                        int ino, int mode, int uid, int gid, int size) {
     public boolean checkModified(FileStat stat) {
@@ -8,7 +10,7 @@ public record FileStat(int ctime_sec, int ctime_nano, int mtime_sec, int mtime_n
             this.size == stat.size;
     }
 
-    public String modeString() {
-        return Integer.toOctalString(mode);
+    public FileMode modeString() {
+        return FileMode.fromString(Integer.toOctalString(mode));
     }
 }

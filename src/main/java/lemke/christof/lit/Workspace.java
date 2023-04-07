@@ -16,6 +16,9 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+
 public record Workspace(Path root) {
 
     public boolean isDirectory(Path path) {
@@ -72,13 +75,13 @@ public record Workspace(Path root) {
         }
     }
 
-    private String mode(Path name) {
+    private FileMode mode(Path name) {
         if (Files.isDirectory(name)) {
-            return "40000";
+            return FileMode.DIRECTORY;
         } else if (Files.isExecutable(name)) {
-            return "100755";
+            return FileMode.EXECUTABLE;
         } else {
-            return "100644";
+            return FileMode.NORMAL;
         }
     }
 
@@ -99,13 +102,14 @@ public record Workspace(Path root) {
 
             @Override
             public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-                Tree tree = new Tree(children.pop());
-                trees.add(tree);
+                Map<Path, Entry> cs = children.pop().stream()
+                    .collect(toMap(Entry::name, identity()));
+                trees.add(new Tree(cs));
                 if (children.empty()) {
-                    rootTree.set(tree);
+                    rootTree.set(new Tree(cs));
                 } else {
                     Path path = root.relativize(dir);
-                    children.peek().add(new Entry(path, tree.oid(), mode(path)));
+                    children.peek().add(new Entry(path, new Tree(cs).oid(), mode(path)));
                 }
 
                 return FileVisitResult.CONTINUE;

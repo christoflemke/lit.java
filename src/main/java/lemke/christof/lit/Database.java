@@ -82,9 +82,9 @@ public record Database(Path root) {
             .toList();
     }
 
-    public record TreeEntry(Path path, Oid oid, String mode) {}
+    public record TreeEntry(Path path, Oid oid, FileMode mode) {}
 
-    public Map<Path, TreeEntry> readTree(DbObject parent, Path path, String mode) {
+    public Map<Path, TreeEntry> readTree(DbObject parent, Path path, FileMode mode) {
         if (parent instanceof Commit c) {
             Oid treeOid = c.treeOid();
             Tree tree = (Tree) read(treeOid);
@@ -95,10 +95,16 @@ public record Database(Path root) {
         }
         Tree tree = (Tree) parent;
         Map<Path, TreeEntry> result = new HashMap<>();
-        for (Entry e : tree.entries()) {
+        for (Entry e : tree.entries().values()) {
             Path entryPath = path.resolve(e.relativePath());
             result.putAll(readTree(read(e.oid()), entryPath, e.mode()));
         }
         return result;
+    }
+
+    public TreeDiff treeDiff(Oid a, Oid b) {
+        TreeDiff treeDiff = new TreeDiff(this);
+        treeDiff.compareOids(a, b);
+        return treeDiff;
     }
 }

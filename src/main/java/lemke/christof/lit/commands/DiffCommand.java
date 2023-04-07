@@ -13,7 +13,7 @@ import java.util.List;
 
 public class DiffCommand implements Command {
 
-    private record Target(Path path, Oid oid, String mode, String data) {
+    private record Target(Path path, Oid oid, FileMode mode, String data) {
         String diffPath(String a) {
             return mode == null ? NULL_PATH : Path.of(a).resolve(path).toString();
         }
@@ -74,14 +74,14 @@ public class DiffCommand implements Command {
         String data = repo.ws().readString(path);
         Blob blob = Blob.fromString(data);
         Oid oid = blob.oid();
-        String mode = repo.ws().stat(path).modeString();
+        FileMode mode = repo.ws().stat(path).modeString();
         return new Target(path, oid, mode, data);
     }
 
     private Target fromIndex(Path path) {
         Index.Entry entry = idx.get(path).get();
         Oid oid = entry.oid();
-        String mode = entry.stat().modeString();
+        FileMode mode = entry.stat().modeString();
         Blob blob = (Blob) repo.db().read(oid);
         return new Target(path, oid, mode, blob.stringData());
     }

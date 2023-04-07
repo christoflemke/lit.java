@@ -30,20 +30,20 @@ public class WorkspaceTest extends BaseTest {
         Entry binEntry = new Entry(
             Path.of("bin"),
             Oid.of("894306874c6757044f9df1b03119638a0fef743d"),
-            "40000"
+            FileMode.DIRECTORY
         );
         Entry fooEntry = new Entry(
             Path.of("foo.txt"),
             Oid.of("19102815663d23f8b75a47e7a01965dcdc96468c"),
-            "100644"
+            FileMode.NORMAL
         );
         Entry barEntry = new Entry(
             Path.of("bin/bar.txt"),
             Oid.of("ba0e162e1c47469e3fe4b393a8bf8c569f302116"),
-            "100644"
+            FileMode.NORMAL
         );
 
-        Tree expectedTree = new Tree(List.of(
+        Tree expectedTree = Tree.fromList(List.of(
                 binEntry,
                 fooEntry
         ));
@@ -52,11 +52,11 @@ public class WorkspaceTest extends BaseTest {
 
         assertEquals(2, result.trees().size());
         assertEquals(
-                new Tree(List.of(barEntry)),
+                Tree.fromList(List.of(barEntry)),
                 result.trees().get(0)
         );
         assertEquals(
-                new Tree(List.of(
+                Tree.fromList(List.of(
                         binEntry,
                         fooEntry
                 )),

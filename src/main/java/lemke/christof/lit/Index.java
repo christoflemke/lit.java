@@ -1,8 +1,8 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.model.Blob;
-import lemke.christof.lit.model.FileStat;
-import lemke.christof.lit.model.Oid;
+import lemke.christof.lit.database.Blob;
+import lemke.christof.lit.database.FileStat;
+import lemke.christof.lit.database.Oid;
 
 import java.io.*;
 import java.nio.ByteBuffer;

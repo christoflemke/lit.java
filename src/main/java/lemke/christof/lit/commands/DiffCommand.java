@@ -4,8 +4,8 @@ import lemke.christof.lit.*;
 import lemke.christof.lit.diff.Diff;
 import lemke.christof.lit.diff.Edit;
 import lemke.christof.lit.diff.Hunk;
-import lemke.christof.lit.model.Blob;
-import lemke.christof.lit.model.Oid;
+import lemke.christof.lit.database.Blob;
+import lemke.christof.lit.database.Oid;
 import lemke.christof.lit.status.Status;
 
 import java.nio.file.Path;

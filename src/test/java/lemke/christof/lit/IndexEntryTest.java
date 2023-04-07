@@ -1,7 +1,7 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.model.FileStat;
-import lemke.christof.lit.model.Oid;
+import lemke.christof.lit.database.FileStat;
+import lemke.christof.lit.database.Oid;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

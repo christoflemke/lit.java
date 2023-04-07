@@ -1,8 +1,7 @@
 package lemke.christof.lit.commands;
 
 import lemke.christof.lit.Repository;
-import lemke.christof.lit.model.Oid;
-import lemke.christof.lit.model.Revision;
+import lemke.christof.lit.database.Oid;
 
 import java.util.Optional;
 

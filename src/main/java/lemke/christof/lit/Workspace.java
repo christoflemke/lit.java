@@ -1,10 +1,8 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.commands.StatusCommand;
-import lemke.christof.lit.model.Blob;
-import lemke.christof.lit.model.Entry;
-import lemke.christof.lit.model.FileStat;
-import lemke.christof.lit.model.Tree;
+import lemke.christof.lit.database.Entry;
+import lemke.christof.lit.database.FileStat;
+import lemke.christof.lit.database.Tree;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -16,7 +14,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public record Workspace(Path root) {

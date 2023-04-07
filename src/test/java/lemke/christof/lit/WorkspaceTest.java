@@ -1,12 +1,11 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.model.Entry;
-import lemke.christof.lit.model.Oid;
-import lemke.christof.lit.model.Tree;
+import lemke.christof.lit.database.Entry;
+import lemke.christof.lit.database.Oid;
+import lemke.christof.lit.database.Tree;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 

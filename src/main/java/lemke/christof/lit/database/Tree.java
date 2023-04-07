@@ -1,4 +1,4 @@
-package lemke.christof.lit.model;
+package lemke.christof.lit.database;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

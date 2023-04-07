@@ -1,8 +1,7 @@
-package lemke.christof.lit.model;
+package lemke.christof.lit.database;
 
 import lemke.christof.lit.BaseTest;
 import lemke.christof.lit.Environment;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;

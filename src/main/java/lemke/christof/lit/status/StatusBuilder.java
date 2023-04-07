@@ -4,9 +4,9 @@ import com.google.common.collect.Sets;
 import lemke.christof.lit.Database;
 import lemke.christof.lit.Index;
 import lemke.christof.lit.Repository;
-import lemke.christof.lit.model.Commit;
-import lemke.christof.lit.model.FileStat;
-import lemke.christof.lit.model.Oid;
+import lemke.christof.lit.database.Commit;
+import lemke.christof.lit.database.FileStat;
+import lemke.christof.lit.database.Oid;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;

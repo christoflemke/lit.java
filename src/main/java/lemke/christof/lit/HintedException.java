@@ -1,8 +1,8 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.model.Commit;
-import lemke.christof.lit.model.DbObject;
-import lemke.christof.lit.model.Oid;
+import lemke.christof.lit.database.Commit;
+import lemke.christof.lit.database.DbObject;
+import lemke.christof.lit.database.Oid;
 
 import java.util.List;
 import java.util.stream.Stream;

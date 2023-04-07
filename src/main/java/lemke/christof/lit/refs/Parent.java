@@ -1,6 +1,6 @@
 package lemke.christof.lit.refs;
 
-import lemke.christof.lit.model.Oid;
+import lemke.christof.lit.database.Oid;
 
 import java.util.Optional;
 

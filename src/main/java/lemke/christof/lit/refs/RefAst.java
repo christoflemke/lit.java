@@ -1,7 +1,7 @@
 package lemke.christof.lit.refs;
 
 import com.google.common.collect.ImmutableMap;
-import lemke.christof.lit.model.Oid;
+import lemke.christof.lit.database.Oid;
 
 import java.util.Optional;
 import java.util.regex.Matcher;

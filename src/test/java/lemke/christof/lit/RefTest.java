@@ -1,7 +1,6 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.model.Oid;
-import lemke.christof.lit.model.Revision;
+import lemke.christof.lit.database.Oid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;

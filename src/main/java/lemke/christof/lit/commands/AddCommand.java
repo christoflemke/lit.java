@@ -1,13 +1,10 @@
 package lemke.christof.lit.commands;
 
 import lemke.christof.lit.*;
-import lemke.christof.lit.model.Blob;
+import lemke.christof.lit.database.Blob;
 
 import java.io.IOException;
-import java.nio.channels.FileLock;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

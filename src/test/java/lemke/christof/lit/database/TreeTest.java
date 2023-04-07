@@ -1,4 +1,4 @@
-package lemke.christof.lit.model;
+package lemke.christof.lit.database;
 
 import org.junit.jupiter.api.Test;
 

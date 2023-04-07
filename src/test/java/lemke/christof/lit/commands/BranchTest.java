@@ -1,9 +1,7 @@
 package lemke.christof.lit.commands;
 
 import lemke.christof.lit.BaseTest;
-import lemke.christof.lit.Lit;
-import lemke.christof.lit.model.Oid;
-import org.junit.jupiter.api.Assertions;
+import lemke.christof.lit.database.Oid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

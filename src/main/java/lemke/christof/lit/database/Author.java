@@ -1,13 +1,11 @@
-package lemke.christof.lit.model;
+package lemke.christof.lit.database;
 
 import lemke.christof.lit.Environment;
 
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.SimpleTimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

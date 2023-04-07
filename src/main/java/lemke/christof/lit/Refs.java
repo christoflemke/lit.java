@@ -1,8 +1,8 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.model.DbObject;
-import lemke.christof.lit.model.Oid;
-import lemke.christof.lit.model.Revision;
+import lemke.christof.lit.database.DbObject;
+import lemke.christof.lit.database.Oid;
+import lemke.christof.lit.refs.Revision;
 import lemke.christof.lit.refs.RefAst;
 
 import java.io.FileNotFoundException;

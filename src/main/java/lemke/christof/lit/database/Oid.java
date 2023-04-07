@@ -1,6 +1,4 @@
-package lemke.christof.lit.model;
-
-import lemke.christof.lit.Util;
+package lemke.christof.lit.database;
 
 import java.nio.file.Path;
 import java.util.Comparator;

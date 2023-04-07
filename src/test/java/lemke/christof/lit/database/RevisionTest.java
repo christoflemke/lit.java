@@ -1,8 +1,7 @@
-package lemke.christof.lit.model;
+package lemke.christof.lit.database;
 
 import lemke.christof.lit.BaseTest;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
+import lemke.christof.lit.refs.Revision;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

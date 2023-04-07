@@ -1,14 +1,11 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.model.Commit;
-import lemke.christof.lit.model.DbObject;
-import lemke.christof.lit.model.Oid;
-import org.junit.jupiter.api.Assertions;
+import lemke.christof.lit.database.Commit;
+import lemke.christof.lit.database.Oid;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

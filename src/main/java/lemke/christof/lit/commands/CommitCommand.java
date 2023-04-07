@@ -1,7 +1,7 @@
 package lemke.christof.lit.commands;
 
 import lemke.christof.lit.*;
-import lemke.christof.lit.model.*;
+import lemke.christof.lit.database.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

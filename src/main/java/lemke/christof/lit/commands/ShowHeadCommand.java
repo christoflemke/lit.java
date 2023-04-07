@@ -3,7 +3,7 @@ package lemke.christof.lit.commands;
 import lemke.christof.lit.Database;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.Util;
-import lemke.christof.lit.model.*;
+import lemke.christof.lit.database.*;
 
 import java.util.Optional;
 

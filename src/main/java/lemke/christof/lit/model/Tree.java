@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 
 public record Tree (List<Entry> entries) implements DbObject {
     @Override
-    public String type() {
-        return "tree";
+    public ObjectType type() {
+        return ObjectType.TREE;
     }
 
     @Override

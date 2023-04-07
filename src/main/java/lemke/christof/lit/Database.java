@@ -6,16 +6,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 public record Database(Path root) {
-    Path objectsPath() {
+    private Path objectsPath() {
         return root.resolve(".git").resolve("objects");
     }
 
@@ -65,15 +67,19 @@ public record Database(Path root) {
         if(name.length() <2) {
             return List.of();
         }
+        final Stream<Path> list;
         try {
-            return Files.list(objectsPath().resolve(name.substring(0, 2)))
-                .filter(p -> p.getFileName().toString().startsWith(name.substring(2)))
-                .map(p -> p.getParent().getFileName().toString() +p.getFileName())
-                .map(Oid::of)
-                .toList();
+            list = Files.list(objectsPath().resolve(name.substring(0, 2)));
+        } catch (NoSuchFileException e) {
+            return List.of();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        return list
+            .filter(p -> p.getFileName().toString().startsWith(name.substring(2)))
+            .map(p -> p.getParent().getFileName().toString() + p.getFileName())
+            .map(Oid::of)
+            .toList();
     }
 
     public record TreeEntry(Path path, Oid oid, String mode) {}

@@ -5,8 +5,8 @@ import java.util.Arrays;
 
 public record Blob (byte[] data) implements DbObject {
     @Override
-    public String type() {
-        return "blob";
+    public ObjectType type() {
+        return ObjectType.BLOB;
     }
 
     public static Blob fromString(String s) {

@@ -1,6 +1,7 @@
 package lemke.christof.lit;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.regex.Matcher;
@@ -28,7 +29,10 @@ public interface Environment {
                 throw new RuntimeException("Failed to parse author time: "+authorDateString);
             }
         } else {
-            return ZonedDateTime.now();
+            Instant now = Instant.now();
+            ZoneId zone = ZoneOffset.systemDefault();
+            ZoneOffset offset = zone.getRules().getOffset(now);
+            return ZonedDateTime.ofInstant(now, offset);
         }
     }
 

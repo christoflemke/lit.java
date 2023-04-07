@@ -60,6 +60,10 @@ public class Lit {
         return new LitCommand(repo -> new ListHeadCommand(repo)).run();
     }
 
+    public LitCommand branch(String... args) {
+        return new LitCommand(repo -> new BranchCommand(repo)).run(args);
+    }
+
     private interface CreateFn {
         Command create(Repository repo);
     }
@@ -74,6 +78,8 @@ public class Lit {
             envMap.put("GIT_AUTHOR_NAME", "Christof Lemke");
             envMap.put("GIT_COMMITTER_NAME", "Christof Lemke");
             envMap.put("GIT_AUTHOR_EMAIL", "doesnotexist@gmail.com");
+            envMap.put("GIT_AUTHOR_DATE", "1678008252 +0100");
+            envMap.put("GIT_COMMITTER_DATE", "1678008251 +0100");
         }
 
         public LitCommand(CreateFn create) {

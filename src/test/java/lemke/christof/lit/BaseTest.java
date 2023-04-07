@@ -9,7 +9,7 @@ import java.util.Map;
 public class BaseTest {
     protected final Lit lit;
     protected final Git git;
-    private final Path root;
+    protected final Path root;
     protected final Repository repo;
 
     {

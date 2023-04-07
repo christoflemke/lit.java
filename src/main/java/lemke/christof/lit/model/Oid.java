@@ -3,10 +3,13 @@ package lemke.christof.lit.model;
 import lemke.christof.lit.Util;
 
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.Optional;
 
 public record Oid(String value) {
+    public static final Comparator<Oid> byName = Comparator.comparing(o -> o.value);
+
     public static Oid of(String value) {
         String trimmed = value.trim();
         if(trimmed.length() != 40) {

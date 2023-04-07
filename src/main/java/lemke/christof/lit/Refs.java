@@ -1,6 +1,8 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.model.DbObject;
 import lemke.christof.lit.model.Oid;
+import lemke.christof.lit.model.Revision;
 import lemke.christof.lit.refs.RefAst;
 
 import java.io.FileNotFoundException;
@@ -24,6 +26,10 @@ public record Refs (Path root, Database db) {
 
     private Path headsPath() {
         return refsPath().resolve("heads");
+    }
+
+    public Oid resolveCommit(String name) {
+        return new Revision(db, this, name).resolve(Optional.of(DbObject.ObjectType.COMMIT));
     }
 
     public void updateHead(Oid ref) {
@@ -100,12 +106,9 @@ public record Refs (Path root, Database db) {
         Optional<Path> path = pathForName(name);
         if (path.isPresent()) {
             return path.flatMap(this::readRefFile);
+        } else {
+            return Optional.empty();
         }
-        List<Oid> candidates = db.prefixMatch(name);
-        if(candidates.size() == 1) {
-            return Optional.of(candidates.get(0));
-        }
-        return Optional.empty();
     }
 
     private Optional<Oid> readRefFile(Path path) {

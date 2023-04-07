@@ -34,13 +34,7 @@ public class BranchCommand implements Command {
             }
             startPoint = head.get().value();
         }
-        Revision revision = new Revision(repo, startPoint);
-        Oid startOid;
-        try {
-            startOid = revision.resolve();
-        } catch (Revision.InvalidObjectException e) {
-            throw new RuntimeException(e);
-        }
+        Oid startOid = this.repo.refs().resolveCommit(startPoint);
         repo.refs().createBranch(branchName, startOid);
     }
 }

@@ -16,7 +16,15 @@ import java.util.zip.DeflaterOutputStream;
 
 public interface DbObject {
 
-    String type();
+    public enum ObjectType {
+        COMMIT, TREE, BLOB;
+
+        @Override public String toString() {
+            return super.toString().toLowerCase();
+        }
+    }
+
+    ObjectType type();
 
     byte[] data();
 

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +22,7 @@ public class RevisionTest extends BaseTest {
         }
     }
 
-    @Test public void test() throws Revision.InvalidObjectException {
+    @Test public void test() {
         assertAll(
             () -> assertEquals("bc6bfb138843dbc0cf43a508168991bf684c4754", revision("master")),
             () -> assertEquals("949f94fd94b9c80686e96b0476f8a130ed77731d", revision("master^")),
@@ -30,7 +31,7 @@ public class RevisionTest extends BaseTest {
         );
     }
 
-    private String revision(String name) throws Revision.InvalidObjectException {
-        return new Revision(repo, name).resolve().value();
+    private String revision(String name) {
+        return new Revision(repo.db(), repo.refs(), name).resolve(Optional.of(DbObject.ObjectType.COMMIT)).value();
     }
 }

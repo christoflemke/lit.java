@@ -1,6 +1,7 @@
 package lemke.christof.lit;
 
 import lemke.christof.lit.model.Oid;
+import lemke.christof.lit.model.Revision;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -41,13 +42,13 @@ public class RefTest extends BaseTest {
     }
 
     @Test public void refByName() {
-        Optional<Oid> master = repo.refs().readRef("master");
-        assertEquals(Optional.of(Oid.of("a1823e229db49387ddf87dfd48331f1b5712489c")), master);
+        Oid master = repo.refs().resolveCommit("master");
+        assertEquals(Oid.of("a1823e229db49387ddf87dfd48331f1b5712489c"), master);
     }
 
     @Test public void refByPrefix() {
-        Optional<Oid> master = repo.refs().readRef("a182");
-        assertEquals(Optional.of(Oid.of("a1823e229db49387ddf87dfd48331f1b5712489c")), master);
+        Oid master = repo.refs().resolveCommit("a182");
+        assertEquals(Oid.of("a1823e229db49387ddf87dfd48331f1b5712489c"), master);
     }
 
     @Test public void refPrefixTooShort() {

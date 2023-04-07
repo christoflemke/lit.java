@@ -4,6 +4,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
+
 public record Commit (
         Optional<Oid> parent,
         Oid treeOid,
@@ -12,8 +15,8 @@ public record Commit (
         String message
 ) implements DbObject {
     @Override
-    public String type() {
-        return "commit";
+    public ObjectType type() {
+        return ObjectType.COMMIT;
     }
 
     @Override
@@ -28,11 +31,12 @@ public record Commit (
         items.add("");
         items.add(message + "\n");
 
-        return items.stream().collect(Collectors.joining("\n")).getBytes(StandardCharsets.UTF_8);
+        return items.stream().collect(joining("\n")).getBytes(StandardCharsets.UTF_8);
     }
 
     public static Commit fromBytes(byte[] data) {
-        Scanner scanner = new Scanner(new String(data));
+        String dataString = new String(data);
+        Scanner scanner = new Scanner(dataString);
         Map<String, String> fields = new HashMap<>();
         while (scanner.hasNext()) {
             String line = scanner.nextLine();
@@ -40,7 +44,8 @@ public record Commit (
                 break;
             }
             String[] split = line.split(" ");
-            fields.put(split[0], split[1]);
+            String rest = stream(split).skip(1).collect(joining(" "));
+            fields.put(split[0], rest);
         }
         String message = scanner.nextLine();
         return new Commit(
@@ -50,5 +55,9 @@ public record Commit (
             Author.fromString(fields.get("committer")),
             message
         );
+    }
+
+    public String titleLine() {
+        return message.lines().findFirst().orElse("");
     }
 }

@@ -5,10 +5,8 @@ import lemke.christof.lit.Database;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Stream.concat;
 
 public class TreeDiff {
     private final Database db;
@@ -47,7 +45,12 @@ public class TreeDiff {
             if (entry.isTree()) {
                 compareOids(Optional.empty(), Optional.of(entry.oid()), path);
             } else {
-                changes.put(path, new Change(Optional.empty(), Optional.of(entry)));
+                Change change = new Change(
+                    path,
+                    Optional.empty(),
+                    Optional.of(entry)
+                );
+                changes.put(path, change);
             }
         }
     }
@@ -55,7 +58,7 @@ public class TreeDiff {
     private void detectDeletions(Map<Path, Entry> a, Map<Path, Entry> b, Path prefix) {
         for (var entry : a.values()) {
             var path = prefix.resolve(entry.name());
-            var other = Optional.of(b.get(path));
+            var other = Optional.ofNullable(b.get(entry.name()));
 
             if (entry.equals(other)) {
                 continue;
@@ -67,6 +70,7 @@ public class TreeDiff {
 
             compareOids(treeAOid, treeBOid, path);
             Change change = new Change(
+                path,
                 Optional.of(entry).filter(Entry::isNotATree),
                 other.filter(Entry::isNotATree)
             );
@@ -94,9 +98,31 @@ public class TreeDiff {
         }
     }
 
-    private record Change(Optional<Entry> a, Optional<Entry> b) {
+    public Map<Path, Change> changes() {
+        return changes;
+    }
+
+    public enum ChangeType {
+        Create, Delete, Update
+    }
+
+    public record Change(Path path, Optional<Entry> oldItem, Optional<Entry> newItem) {
         public boolean isEmpty() {
-            return a.isEmpty() && b.isEmpty();
+            return oldItem.isEmpty() && newItem.isEmpty();
+        }
+
+        public ChangeType type() {
+            if(oldItem.isEmpty()) {
+                return ChangeType.Create;
+            } else if(newItem.isEmpty()) {
+                return ChangeType.Delete;
+            } else {
+                return ChangeType.Update;
+            }
+        }
+
+        public Optional<Oid> oid() {
+            return newItem.map(Entry::oid);
         }
     }
 }

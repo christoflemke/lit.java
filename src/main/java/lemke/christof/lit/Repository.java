@@ -1,5 +1,7 @@
 package lemke.christof.lit;
 
+import lemke.christof.lit.database.TreeDiff;
+import lemke.christof.lit.repository.Migration;
 import lemke.christof.lit.status.Status;
 import lemke.christof.lit.status.StatusBuilder;
 
@@ -34,5 +36,9 @@ public record Repository(Workspace ws, Database db, Refs refs, Environment env, 
             idx.commit();
             return status;
         });
+    }
+
+    public Migration migration(TreeDiff diff) {
+        return new Migration(this, diff);
     }
 }

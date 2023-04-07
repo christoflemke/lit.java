@@ -1,9 +1,10 @@
 package lemke.christof.lit;
 
-import lemke.christof.lit.database.Entry;
-import lemke.christof.lit.database.FileStat;
-import lemke.christof.lit.database.Tree;
+import lemke.christof.lit.database.*;
+import lemke.christof.lit.repository.Migration;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -16,6 +17,9 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.util.Comparator.reverseOrder;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
@@ -53,16 +57,95 @@ public record Workspace(Path root) {
         try {
             return Files.list(root)
                 .flatMap(f -> {
-                   if (f.toFile().isDirectory()) {
-                       return listFilesRecursive(f);
-                   } else {
-                       return Stream.of(f);
-                   }
+                    if (f.toFile().isDirectory()) {
+                        return listFilesRecursive(f);
+                    } else {
+                        return Stream.of(f);
+                    }
                 });
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
+
+    public void applyMigration(Migration migration) {
+        new Migrator(migration).applyMigration();
+    }
+
+    private class Migrator {
+        private final Migration migration;
+
+        private Migrator(Migration migration) {
+            this.migration = migration;
+        }
+
+        public void applyMigration() {
+            applyChangeList(TreeDiff.ChangeType.Delete);
+            deleteDirectories();
+            createDirectories();
+            applyChangeList(TreeDiff.ChangeType.Update);
+            applyChangeList(TreeDiff.ChangeType.Create);
+        }
+
+        private void createDirectories() {
+            migration.mkdirs().stream().sorted().forEach(p -> {
+                try {
+                    if(Files.exists(p)) {
+                        Files.delete(p);
+                    }
+                    if(!Files.isDirectory(p)) {
+                        Files.createDirectories(p);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        private void deleteDirectories() {
+            migration.rmdirs().stream()
+                .sorted(reverseOrder())
+                .map(p -> root.resolve(p))
+                .map(Path::toFile)
+                .forEach(File::delete);
+        }
+
+        private void applyChangeList(TreeDiff.ChangeType action) {
+            for (var change : migration.changes().get(action)) {
+                var path = root.resolve(change.path());
+
+                deleteRecursive(path);
+                if (action == TreeDiff.ChangeType.Delete) {
+                    continue;
+                }
+
+                Blob blob = migration.blobData(change.oid());
+
+                try {
+                    Files.writeString(path, blob.stringData(), CREATE, TRUNCATE_EXISTING);
+                    if (change.newItem().get().mode() == FileMode.EXECUTABLE) {
+                        path.toFile().setExecutable(true);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        private void deleteRecursive(Path path) {
+            try {
+                Files.walk(path)
+                    .sorted(reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+            } catch(NoSuchFileException e) {
+                // ignore
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
 
     public record BuildResult(Tree root, List<Tree> trees) {
     }

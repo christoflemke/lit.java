@@ -66,6 +66,10 @@ public class Git {
         return new GitCommand("git", "-c", "color.ui=always", "diff").run();
     }
 
+    public GitCommand branch(String branchName) {
+        return new GitCommand("git", "branch", branchName).run();
+    }
+
     public class GitCommand {
         private final String[] args;
         private int exitCode;

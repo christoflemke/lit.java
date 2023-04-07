@@ -5,6 +5,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class RefTest extends BaseTest {
@@ -36,6 +38,20 @@ public class RefTest extends BaseTest {
         );
         repo.refs().createBranch("master1", NULL_OID);
         repo.refs().createBranch("main", NULL_OID);
+    }
+
+    @Test public void refByName() {
+        Optional<Oid> master = repo.refs().readRef("master");
+        assertEquals(Optional.of(Oid.of("a1823e229db49387ddf87dfd48331f1b5712489c")), master);
+    }
+
+    @Test public void refByPrefix() {
+        Optional<Oid> master = repo.refs().readRef("a182");
+        assertEquals(Optional.of(Oid.of("a1823e229db49387ddf87dfd48331f1b5712489c")), master);
+    }
+
+    @Test public void refPrefixTooShort() {
+        assertEquals(Optional.empty(), repo.refs().readRef("a"));
     }
 
     private Executable invalidBranchName(String branchName) {

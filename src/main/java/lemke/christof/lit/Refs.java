@@ -9,7 +9,7 @@ import java.nio.file.*;
 import java.util.List;
 import java.util.Optional;
 
-public record Refs (Path root) {
+public record Refs (Path root, Database db) {
     Path headPath() {
         return gitPath().resolve("HEAD");
     }
@@ -97,7 +97,15 @@ public record Refs (Path root) {
     }
 
     public Optional<Oid> readRef(String name) {
-        return pathForName(name).flatMap(this::readRefFile);
+        Optional<Path> path = pathForName(name);
+        if (path.isPresent()) {
+            return path.flatMap(this::readRefFile);
+        }
+        List<Oid> candidates = db.prefixMatch(name);
+        if(candidates.size() == 1) {
+            return Optional.of(candidates.get(0));
+        }
+        return Optional.empty();
     }
 
     private Optional<Oid> readRefFile(Path path) {

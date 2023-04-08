@@ -38,7 +38,7 @@ public record Repository(Workspace ws, Database db, Refs refs, Environment env, 
         });
     }
 
-    public Migration migration(TreeDiff diff) {
-        return new Migration(this, diff);
+    public Migration migration(TreeDiff diff, Index index) {
+        return new Migration(this, index, diff);
     }
 }

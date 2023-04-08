@@ -192,10 +192,15 @@ public class Index {
     }
 
     public Blob add(Path path) {
-        Blob blob = new Blob(ws.read(path));
+        Blob blob = ws.read(path);
         Entry entry = createEntry(path, blob.oid());
         entries.add(entry);
         return blob;
+    }
+
+    public void add(Path path, Oid oid) {
+        Entry entry = createEntry(path, oid);
+        entries.add(entry);
     }
 
     public Optional<Entry> get(Path path) {
@@ -248,7 +253,7 @@ public class Index {
     }
 
     public Oid hash(Path relativePath) {
-        return new Blob(ws.read(relativePath)).oid();
+        return ws.read(relativePath).oid();
     }
     public static int calculatePadding(int pathLength) {
         return 8 - ((62 + pathLength) % 8);
@@ -261,6 +266,10 @@ public class Index {
         if(!removed || !added) {
             System.err.println("Index did not contain entry for: "+path);
         }
+    }
+
+    public void remove(Path path) {
+        entries.removeIf(e -> e.path.equals(path) || e.path.startsWith(path));
     }
 
     public record Entry(Path path, Oid oid, FileStat stat) {

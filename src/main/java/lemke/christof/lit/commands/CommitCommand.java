@@ -35,8 +35,4 @@ public record CommitCommand(Repository repo) implements Command {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(repo.io().in()));
         return bufferedReader.lines().collect(Collectors.joining(""));
     }
-
-    Blob createBlob(Path f) {
-        return new Blob(repo.ws().read(f));
-    }
 }

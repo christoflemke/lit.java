@@ -1,5 +1,6 @@
 package lemke.christof.lit.commands;
 
+import lemke.christof.lit.Index;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.database.TreeDiff;
 import lemke.christof.lit.repository.Migration;
@@ -23,9 +24,15 @@ public class CheckoutCommand implements Command {
             throw new RuntimeException("Head does not point to anything");
         }
         var targetOid = repo.refs().resolveCommit(target);
+        Index index = repo.createIndex();
+        index.withLock(() -> {
+            TreeDiff diff = repo.db().treeDiff(currentOid.get(), targetOid);
+            Migration migration = repo.migration(diff, index);
+            migration.applyChanges();
 
-        TreeDiff diff = repo.db().treeDiff(currentOid.get(), targetOid);
-        Migration migration = repo.migration(diff);
-        migration.applyChanges();
+            index.commit();
+            return null;
+        });
+        repo.refs().updateHead(targetOid);
     }
 }

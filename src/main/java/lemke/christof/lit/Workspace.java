@@ -211,16 +211,17 @@ public record Workspace(Path root) {
         return new BuildResult(rootTree.get(), trees);
     }
 
-    public byte[] read(Path f) {
+    public Blob read(Path f) {
         try {
-            return Files.readAllBytes(root.resolve(f));
+            byte[] bytes = Files.readAllBytes(root.resolve(f));
+            return new Blob(bytes);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public String readString(Path f) {
-        return new String(read(f), StandardCharsets.UTF_8);
+        return read(f).stringData();
     }
 
     static int REGULAR_MODE = 0100644;

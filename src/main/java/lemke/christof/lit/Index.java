@@ -151,26 +151,30 @@ public class Index {
             int paddingLength = calculatePadding(pathBytes.length);
 
             for (int p = 0; p < paddingLength; p++) {
-                if (in.get() != (byte)0x00) {
+                if (in.get() != (byte) 0x00) {
                     throw new RuntimeException("padding should be all 0s ");
                 }
             }
 
-            FileStat stat = new FileStat(ctime_sec,
-                    ctime_nano,
-                    mtime_sec,
-                    mtime_nano,
-                    dev,
-                    ino,
-                    mode,
-                    uid,
-                    gid,
-                    fileSize);
+            Path path = Path.of(new String(pathBytes, StandardCharsets.UTF_8));
+            FileStat stat = new FileStat(
+                path,
+                ctime_sec,
+                ctime_nano,
+                mtime_sec,
+                mtime_nano,
+                dev,
+                ino,
+                mode,
+                uid,
+                gid,
+                fileSize
+            );
 
             Entry e = new Entry(
-                    Path.of(new String(pathBytes, StandardCharsets.UTF_8)),
-                    Oid.fromBytes(oidBytes),
-                    stat
+                path,
+                Oid.fromBytes(oidBytes),
+                stat
 
             );
             entries.add(e);
@@ -192,14 +196,19 @@ public class Index {
     }
 
     public Blob add(Path path) {
-        Blob blob = ws.read(path);
+        Blob blob = ws.read(path).get();
         Entry entry = createEntry(path, blob.oid());
-        entries.add(entry);
+        addEntry(path, entry);
         return blob;
     }
 
     public void add(Path path, Oid oid) {
         Entry entry = createEntry(path, oid);
+        addEntry(path, entry);
+    }
+
+    private void addEntry(Path path, Entry entry) {
+        remove(path);
         entries.add(entry);
     }
 
@@ -244,7 +253,7 @@ public class Index {
     }
 
     Entry createEntry(Path path, Oid oid) {
-        FileStat stat = ws.stat(path);
+        FileStat stat = ws.stat(path).get();
         return new Entry(
             path,
             oid,
@@ -253,8 +262,9 @@ public class Index {
     }
 
     public Oid hash(Path relativePath) {
-        return ws.read(relativePath).oid();
+        return ws.read(relativePath).get().oid();
     }
+
     public static int calculatePadding(int pathLength) {
         return 8 - ((62 + pathLength) % 8);
     }
@@ -263,13 +273,17 @@ public class Index {
         Entry e = new Entry(path, oid, currentStat);
         boolean removed = entries.remove(e);
         boolean added = entries.add(e);
-        if(!removed || !added) {
-            System.err.println("Index did not contain entry for: "+path);
+        if (!removed || !added) {
+            System.err.println("Index did not contain entry for: " + path);
         }
     }
 
     public void remove(Path path) {
         entries.removeIf(e -> e.path.equals(path) || e.path.startsWith(path));
+    }
+
+    public boolean isTracked(Path path) {
+        return entries.stream().anyMatch(p -> p.equals(path));
     }
 
     public record Entry(Path path, Oid oid, FileStat stat) {

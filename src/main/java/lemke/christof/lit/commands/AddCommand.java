@@ -35,16 +35,12 @@ public record AddCommand(Repository repo) implements Command {
     static Set<Path> IGNORED = Set.of(Path.of(".git"));
 
     Stream<Path> files(Path start) {
-        try {
-            if (IGNORED.contains(repo.ws().toRelativePath(start))) {
-                return Stream.of();
-            } else if (repo.ws().isDirectory(start)) {
-                return repo.ws().list(start).flatMap(this::files);
-            } else {
-                return Stream.of(start);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (IGNORED.contains(repo.ws().toRelativePath(start))) {
+            return Stream.of();
+        } else if (repo.ws().isDirectory(start)) {
+            return repo.ws().list(start).flatMap(this::files);
+        } else {
+            return Stream.of(start);
         }
     }
 }

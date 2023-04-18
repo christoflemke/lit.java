@@ -64,8 +64,8 @@ public class Lit {
         return new LitCommand(repo -> new BranchCommand(repo)).run(args);
     }
 
-    public void checkout(String branchName) {
-        new LitCommand(repo -> new CheckoutCommand(repo)).run(branchName);
+    public LitCommand checkout(String branchName) {
+        return new LitCommand(repo -> new CheckoutCommand(repo)).run(branchName);
     }
 
     private interface CreateFn {

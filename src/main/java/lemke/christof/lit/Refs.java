@@ -59,19 +59,7 @@ public record Refs (Path root, Database db) {
     }
 
     public Optional<Oid> readHead() {
-        try {
-            String ref = Files.readString(headPath());
-            if (ref.startsWith("ref:")) {
-                String[] split = ref.split(" ");
-                String sha = Files.readString(gitPath().resolve(Path.of(split[1].trim())));
-                return Optional.of(Oid.of(sha));
-            }
-            return Optional.of(Oid.of(ref));
-        } catch (NoSuchFileException e) {
-            return Optional.empty();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return readRefFile(headPath());
     }
 
     public void createBranch(String branchName, Oid startOid) {
@@ -113,8 +101,14 @@ public record Refs (Path root, Database db) {
 
     private Optional<Oid> readRefFile(Path path) {
         try {
-            return Optional.of(Oid.of(Files.readString(path)));
-        } catch (FileNotFoundException e) {
+            String fromFile = Files.readString(path);
+            if(fromFile.startsWith("ref: ")) {
+                String[] split = fromFile.split(" ");
+                Path relPath = Path.of(split[1].trim());
+                return readRefFile(gitPath().resolve(relPath));
+            }
+            return Optional.of(Oid.of(fromFile));
+        } catch (NoSuchFileException e) {
             return Optional.empty();
         } catch (IOException e) {
             throw new RuntimeException(e);

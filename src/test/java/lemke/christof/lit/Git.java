@@ -102,7 +102,8 @@ public class Git {
                 exitCode = process.waitFor();
                 if(exitCode != 0) {
                     String err = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
-                    throw new RuntimeException("git failed with exit code: "+exitCode+" err:"+err);
+                    String out = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                    throw new RuntimeException("git failed with exit code: "+exitCode+" err:"+err + "\n" + out);
                 }
                 output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             } catch (IOException e) {

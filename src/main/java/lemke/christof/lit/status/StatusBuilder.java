@@ -116,7 +116,7 @@ public class StatusBuilder {
                 return ModifiedStatus.UNTRACKED;
             }
 
-            FileStat currentStat = repo.ws().stat(relativePath);
+            FileStat currentStat = repo.ws().stat(relativePath).get();
             if (currentStat.equals(idxEntry.get().stat())) {
                 return ModifiedStatus.STAGED;
             }

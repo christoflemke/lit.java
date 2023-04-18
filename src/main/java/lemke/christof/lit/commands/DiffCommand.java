@@ -71,10 +71,10 @@ public class DiffCommand implements Command {
     }
 
     private Target fromFile(Path path) {
-        String data = repo.ws().readString(path);
+        String data = repo.ws().readString(path).get();
         Blob blob = Blob.fromString(data);
         Oid oid = blob.oid();
-        FileMode mode = repo.ws().stat(path).modeString();
+        FileMode mode = repo.ws().stat(path).get().modeString();
         return new Target(path, oid, mode, data);
     }
 

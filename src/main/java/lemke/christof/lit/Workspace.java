@@ -4,9 +4,7 @@ import lemke.christof.lit.database.*;
 import lemke.christof.lit.repository.Migration;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFileAttributeView;
@@ -29,8 +27,12 @@ public record Workspace(Path root) {
         return root.resolve(path).toFile().isDirectory();
     }
 
-    public Stream<Path> list(Path start) throws IOException {
-        return Files.list(root.resolve(start));
+    public Stream<Path> list(Path start) {
+        try {
+            return Files.list(root.resolve(start));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Path toRelativePath(Path path) {
@@ -72,6 +74,10 @@ public record Workspace(Path root) {
         new Migrator(migration).applyMigration();
     }
 
+    public boolean isFile(Path path) {
+        return resolve(path).toFile().isFile();
+    }
+
     private class Migrator {
         private final Migration migration;
 
@@ -90,12 +96,14 @@ public record Workspace(Path root) {
         private void createDirectories() {
             migration.mkdirs().stream().sorted().forEach(p -> {
                 try {
-                    if(Files.exists(p)) {
+                    if (Files.exists(p)) {
                         Files.delete(p);
                     }
-                    if(!Files.isDirectory(p)) {
+                    if (!Files.isDirectory(p)) {
                         Files.createDirectories(p);
                     }
+                } catch (DirectoryNotEmptyException e) {
+                    // skip
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -122,6 +130,7 @@ public record Workspace(Path root) {
                 Blob blob = migration.blobData(change.oid());
 
                 try {
+                    Files.createDirectories(path.getParent());
                     Files.writeString(path, blob.stringData(), CREATE, TRUNCATE_EXISTING);
                     if (change.newItem().get().mode() == FileMode.EXECUTABLE) {
                         path.toFile().setExecutable(true);
@@ -211,27 +220,32 @@ public record Workspace(Path root) {
         return new BuildResult(rootTree.get(), trees);
     }
 
-    public Blob read(Path f) {
+    public Optional<Blob> read(Path f) {
         try {
             byte[] bytes = Files.readAllBytes(root.resolve(f));
-            return new Blob(bytes);
+            return Optional.of(new Blob(bytes));
+        } catch (NoSuchFileException e) {
+            return Optional.empty();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public String readString(Path f) {
-        return read(f).stringData();
+    public Optional<String> readString(Path f) {
+        return read(f).map(Blob::stringData);
     }
 
     static int REGULAR_MODE = 0100644;
     static int EXECUTABLE_MODE = 0100755;
 
-    public FileStat stat(Path path) {
+    public Optional<FileStat> stat(Path path) {
         if (path.isAbsolute()) {
             throw new RuntimeException("Expected relative path");
         }
         Path absolutePath = resolve(path);
+        if(!absolutePath.toFile().exists()) {
+            return Optional.empty();
+        }
         PosixFileAttributeView fileAttributeView = Files.getFileAttributeView(absolutePath, PosixFileAttributeView.class);
         final PosixFileAttributes attributes;
         final Long inode;
@@ -242,7 +256,8 @@ public record Workspace(Path root) {
         }
 
         try {
-            return new FileStat(
+            return Optional.of(new FileStat(
+                path,
                 Math.toIntExact(attributes.creationTime().toMillis() / 1000),
                 attributes.creationTime().toInstant().get(ChronoField.NANO_OF_SECOND),
                 Math.toIntExact(attributes.lastModifiedTime().toMillis() / 1000),
@@ -253,7 +268,7 @@ public record Workspace(Path root) {
                 (Integer) Files.getAttribute(absolutePath, "unix:uid"),
                 (Integer) Files.getAttribute(absolutePath, "unix:gid"),
                 Math.toIntExact(Math.min(attributes.size(), Integer.MAX_VALUE))
-            );
+            ));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

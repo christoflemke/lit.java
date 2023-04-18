@@ -26,6 +26,7 @@ public class CheckoutCommand implements Command {
         var targetOid = repo.refs().resolveCommit(target);
         Index index = repo.createIndex();
         index.withLock(() -> {
+            index.load();
             TreeDiff diff = repo.db().treeDiff(currentOid.get(), targetOid);
             Migration migration = repo.migration(diff, index);
             migration.applyChanges();

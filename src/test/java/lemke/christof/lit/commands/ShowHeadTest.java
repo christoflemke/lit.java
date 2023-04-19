@@ -17,13 +17,13 @@ public class ShowHeadTest extends BaseTest {
 
 
         Lit.LitCommand litCommand = lit.showHead();
-
+//7ac5e0a102bcab3eac0109c283592d4a70bbb1b5
         assertEquals("""
-                        commit 2635aba50b5031bbd96997f4b33393b28c847fe1
-                          tree bc342f35c92dbd0b376b0be6f78c641563863950
-                            blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-                            tree cb264b7ec91c6256e91b945dde3f5703fddb1ba3
-                              blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
-                        """, litCommand.output());
+                         commit 488c62f95f9336af7068695900b10d576eb3afa0
+                           tree 7ac5e0a102bcab3eac0109c283592d4a70bbb1b5
+                             blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+                             tree cb264b7ec91c6256e91b945dde3f5703fddb1ba3
+                               blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+                         """, litCommand.output());
     }
 }

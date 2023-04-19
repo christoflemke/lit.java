@@ -34,6 +34,6 @@ public class CheckoutCommand implements Command {
             index.commit();
             return null;
         });
-        repo.refs().updateHead(targetOid);
+        repo.refs().setHead(target, targetOid);
     }
 }

@@ -5,7 +5,6 @@ import lemke.christof.lit.database.Oid;
 import lemke.christof.lit.refs.Revision;
 import lemke.christof.lit.refs.RefAst;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
@@ -42,6 +41,29 @@ public record Refs (Path root, Database db) {
         }
     }
 
+    public void setHead(String target, Oid oid) {
+        Path path = headsPath().resolve(target);
+
+        if(path.toFile().isFile()) {
+            Path relative = gitPath().relativize(path);
+            updateRefFile(headPath(), "ref: "+relative);
+        } else {
+            updateRefFile(headPath(), oid.toString());
+        }
+    }
+
+    private void updateRefFile(Path path, String refOrOid) {
+        try {
+            Files.writeString(path, refOrOid);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Just returns the branch name HEAD is pointing to
+     * @return A branch name or and Oid
+     */
     public String readHeadBranch() {
         String ref;
         try {
@@ -58,8 +80,12 @@ public record Refs (Path root, Database db) {
         }
     }
 
+    /**
+     * Resolves HEAD to an Oid
+     * @return An Oid if HEAD is valid
+     */
     public Optional<Oid> readHead() {
-        return readRefFile(headPath());
+        return readSymRef(headPath());
     }
 
     public void createBranch(String branchName, Oid startOid) {
@@ -93,19 +119,19 @@ public record Refs (Path root, Database db) {
     public Optional<Oid> readRef(String name) {
         Optional<Path> path = pathForName(name);
         if (path.isPresent()) {
-            return path.flatMap(this::readRefFile);
+            return path.flatMap(this::readSymRef);
         } else {
             return Optional.empty();
         }
     }
 
-    private Optional<Oid> readRefFile(Path path) {
+    private Optional<Oid> readSymRef(Path path) {
         try {
             String fromFile = Files.readString(path);
             if(fromFile.startsWith("ref: ")) {
                 String[] split = fromFile.split(" ");
                 Path relPath = Path.of(split[1].trim());
-                return readRefFile(gitPath().resolve(relPath));
+                return readSymRef(gitPath().resolve(relPath));
             }
             return Optional.of(Oid.of(fromFile));
         } catch (NoSuchFileException e) {

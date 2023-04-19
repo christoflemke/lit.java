@@ -40,12 +40,10 @@ public class CheckoutTest extends BaseTest {
         assertEquals("a", Files.readString(root.resolve("c/modified.txt")));
     }
 
-    @Test void headIsUpdated() {
-        Oid expected = repo.refs().resolveCommit("test");
-
+    @Test void headIsUpdated() throws IOException {
         lit.checkout("test");
 
-        assertEquals(expected, repo.refs().readHead().get());
+        assertEquals("ref: refs/heads/test", Files.readString(root.resolve(".git").resolve("HEAD")));
     }
 
     @Test void indexIsUpdated() {

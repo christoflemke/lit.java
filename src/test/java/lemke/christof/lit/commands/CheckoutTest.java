@@ -43,7 +43,7 @@ public class CheckoutTest extends BaseTest {
     @Test void headIsUpdated() throws IOException {
         lit.checkout("test");
 
-        assertEquals("ref: refs/heads/test", Files.readString(root.resolve(".git").resolve("HEAD")));
+        assertEquals("ref: refs/heads/test\n", Files.readString(root.resolve(".git").resolve("HEAD")));
     }
 
     @Test void indexIsUpdated() {

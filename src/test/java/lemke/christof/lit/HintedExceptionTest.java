@@ -21,7 +21,7 @@ public class HintedExceptionTest extends BaseTest {
         write("bar");
         lit.add(".");
         lit.commit();
-        master = repo.refs().readHead().get();
+        master = repo.refs().resolveHead().get();
         Commit commit = (Commit) repo.db().read(master);
         treeOid = commit.treeOid();
     }

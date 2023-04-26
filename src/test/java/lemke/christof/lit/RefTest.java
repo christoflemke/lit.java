@@ -51,7 +51,7 @@ public class RefTest extends BaseTest {
     }
 
     @Test public void refPrefixTooShort() {
-        assertEquals(Optional.empty(), repo.refs().readRef("a"));
+        assertEquals(Optional.empty(), repo.refs().resolveBranchName("a"));
     }
 
     private Executable invalidBranchName(String branchName) {

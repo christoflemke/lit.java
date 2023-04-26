@@ -3,6 +3,7 @@ package lemke.christof.lit.status;
 import com.google.common.collect.Sets;
 import lemke.christof.lit.Database;
 import lemke.christof.lit.Index;
+import lemke.christof.lit.Refs;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.database.Commit;
 import lemke.christof.lit.database.FileStat;
@@ -95,7 +96,7 @@ public class StatusBuilder {
     }
 
     private Map<Path, Database.TreeEntry> loadHeadTree() {
-        Optional<Oid> head = this.repo.refs().readHead();
+        Optional<Oid> head = this.repo.refs().resolveHead();
         if (head.isEmpty()) {
             return Map.of();
         }

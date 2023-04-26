@@ -19,7 +19,7 @@ public record CommitCommand(Repository repo) implements Command {
             repo.db().write(t);
         }
         String message = readMessage();
-        Optional<Oid> parent = repo.refs().readHead();
+        Optional<Oid> parent = repo.refs().resolveHead();
         Commit commit = new Commit(
                 parent,
                 result.root().oid(),

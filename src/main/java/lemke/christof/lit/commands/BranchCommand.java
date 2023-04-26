@@ -23,7 +23,7 @@ public class BranchCommand implements Command {
             throw new RuntimeException("Please provide a branch name");
         }
         String branchName = args[0];
-        Optional<Oid> head = repo.refs().readHead();
+        Optional<Oid> head = repo.refs().resolveHead();
         String startPoint;
         if (args.length > 1) {
             startPoint = args[1];

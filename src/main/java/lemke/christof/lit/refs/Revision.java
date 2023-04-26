@@ -48,7 +48,7 @@ public class Revision {
 
     private class RevisionContext implements Context {
         @Override public Optional<Oid> readRef(String name) {
-            Optional<Oid> oid = refs.readRef(name);
+            Optional<Oid> oid = refs.resolveBranchName(name);
             if (oid.isPresent()) {
                 return oid;
             }

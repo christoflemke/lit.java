@@ -1,6 +1,7 @@
 package lemke.christof.lit.commands;
 
 import lemke.christof.lit.Color;
+import lemke.christof.lit.Refs;
 import lemke.christof.lit.Repository;
 import lemke.christof.lit.status.ModifiedStatus;
 import lemke.christof.lit.status.Status;
@@ -38,7 +39,8 @@ public class StatusCommand implements Command {
         }
 
         private void printLong() {
-            repo.io().out().println("On branch " + repo.refs().readHeadBranch());
+            String branchName = repo.refs().head().map(Refs.Ref::shortName).orElse("");
+            repo.io().out().println("On branch " + branchName);
 
             String stagedMessage = """
                 Changes to be committed:

@@ -12,7 +12,7 @@ public record ListHeadCommand(Repository repo) implements Command {
     @Override
     public void run(String[] args) {
         Database db = repo.db();
-        Optional<Oid> oid = repo.refs().readHead();
+        Optional<Oid> oid = repo.refs().resolveHead();
         if(oid.isEmpty()) {
             throw new RuntimeException("HEAD does not point to anything");
         }
